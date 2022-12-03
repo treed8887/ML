@@ -1,0 +1,68 @@
+---
+title: "Example of Simulated Estimates"
+author: "Laura Kapitula"
+date: "10/7/2021"
+output: html_document
+---
+
+```{r, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 2.5)
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(error=TRUE, message=FALSE, warning=FALSE)
+# options(width = 100)
+```
+### Needed packages {-}
+
+```{r, message=FALSE}
+library(tidyverse)
+library(infer)
+library(janitor)
+library(matrixStats)
+```
+
+
+### Checking if an Estimate is Unbiased
+
+Is the sample mean from a poisson distribution from a random sample with n=100 and lambda = 2 an unbiased estimate for lambda?
+
+We will take 1,000 random samples for which $n = 100$ and $\lambda = 2$.
+Every simulated sample is a simulated data set with a sample size of 100.
+
+```{r}
+
+# how many simulations would you like?
+nsims <- 10000
+
+# set the true data-generating parameters
+lambda = 2
+n = 100
+
+set.seed(1025)
+
+# simulate
+sims <- matrix(rpois(n = n*nsims, lambda = lambda),nsims,n)
+ybar <- rowMeans(sims)
+#ybar5 is the sample mean of the first 5 observations
+ybar5 <-rowMeans(sims[,1:5])
+yMedian <-rowMedians(sims)
+
+d <-
+  tibble(i = 1:nsims,ybar,ybar5,yMedian) 
+
+glimpse(d)
+```
+
+Check If the Estimator is Biased
+```{r}
+d %>% 
+  summarise(meanybar = mean(ybar),meanybar5=mean(ybar5)) %>%
+  mutate(biasybar=meanybar-lambda, biasybar5 = meanybar5-lambda)
+```
+
+
+Look at the variance of the estimators.  Which do you think will have less variability?
+
+```{r}
+d %>% 
+  summarise(sdybar = sd(ybar),sdybar5=sd(ybar5)) 
+```

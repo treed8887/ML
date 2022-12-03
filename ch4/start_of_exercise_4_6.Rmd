@@ -1,0 +1,22 @@
+---
+title: "Problem 4.6"
+author: "Laura Kapitula"
+date: "10/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 4.6
+
+```{r }
+pgirls = c(.4777, .4875, .4859 ,.4754, .4874, .4864 ,.4813 ,.4787, .4895,
+              .4797 ,.4876, .4859 ,.4857 ,.4907, .5010 ,.4903, .4860 ,.4911 ,.4871, .4725, .4822 ,.4870,
+              .4823 ,.4973)
+(est_prop=mean(pgirls))
+(sd_prop = sd(pgirls))
+(theory_se_phat = sqrt(est_prop*(1-est_prop)/3900))
+```
+

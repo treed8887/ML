@@ -1,0 +1,660 @@
+---
+title: "Final Exam"
+author: "Tyler Reed"
+date: "12/6/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, error=FALSE, warning=FALSE, comment=NA)
+# switch this to TRUE to save figures in separate files
+savefigs <- FALSE
+```
+
+```{r load_packages1, message = FALSE}
+# Packages required for Chapter 1
+library(knitr)
+library(rstanarm)
+library(readr)
+library(tidyverse)
+library(kableExtra)
+library(tidymodels)
+library(corrr)
+library(viridis)
+library(ggthemes)
+library(patchwork)
+library(car)
+library(leaps)
+library(glmnet)
+library(parsnip)
+library(probably)
+library(dplyr)
+library(rsample)
+library(modeldata)
+data("lending_club")
+# library(MASS)
+TipData <- as_tibble(read_csv("~/Downloads/RStudio Files STA631/STA631-Exams_Lessons-rstudio-export/exam/TipData.csv"))
+```
+
+You are allowed to use your book and the internet to complete this exam.  You are also able to use other written material, but please indicate a reference if you used an idea from another source.  You do not have to site if you use online documentation or generally available code.  If you are in doubt, site your source.
+
+You may NOT talk to anyone in person or over any type of media about this exam.  You may not ask questions of any other human.  You may not help anyone else.  
+
+
+Honor Pledge 
+I affirm that I did not give or receive any unauthorized help on this exam, and that all work is my own.
+retype the pledge:
+
+I affirm that I did not give or receive any unauthorized help on this exam, and that all work is my own.
+
+you can type your name below to indicate agreement with a date:
+
+Signature: Tyler Reed
+
+# Problem 1
+
+A student collected data from a restaurant where she was a waitress [@Dahlquist2011].  The student was interested in learning under what conditions a waitress can expect the largest tips---for example:  At dinner time or late at night?  From younger or older patrons?  From patrons receiving free meals?  From patrons drinking alcohol?  From patrons tipping with cash or credit?  And should tip amount be measured as total dollar amount or as a percentage? Data can be found in `TipData.csv`. Here is a quick description of the variables collected:
+
+    - `Day` = day of the week HIST
+    - `Meal` = time of day (Lunch, Dinner, Late Night) 
+    - `Payment` = how bill was paid (Credit, Cash, Credit with Cash tip) 
+    - `Party` = number of people in the party
+    -	`Age` = age category of person paying the bill (Yadult, Middle, SenCit) 
+    -	`GiftCard` = was gift card used? 
+    -	`Comps` = was part of the meal complimentary?
+    -	`Alcohol` = was alcohol purchased?
+    -	`Bday` = was a free birthday meal or treat given?
+    -	`Bill` = total size of the bill
+    -	`W.tip` = total amount paid (bill plus tip)
+    -	`Tip` = amount of the tip
+    -	`Tip.Percentage` = proportion of the bill represented by the tip 
+    
+    
+    
+A. (10 points) Create graphics and data summaries that explore your data, keeping in mind the research questions the student waitress is trying to answer.  Also give a paragraph describing what you have learned about the data based on your exploratory data analysis.
+
+```{r A.}
+# summary
+summary(TipData)
+
+# cor matrix for numeric variables
+Tip_Data_num <- TipData %>%
+                      select(Bill, "W/Tip", Tip, `Tip Percentage`)
+pairs(Tip_Data_num)
+title("Correlation Matrix of Numeric Variables")
+
+# non-numeric variables
+TipData %>%
+  ggplot(aes(x=Day, fill="Red")) +
+  geom_histogram(stat = "Count") +
+  labs(x = "Day",
+       y = "Total",
+       title = "Histogram of Day") +
+  theme_tufte(base_size = 14) +
+  theme(legend.position = "none")
+
+TipData %>%
+  ggplot(aes(x=Age, fill = "Red")) +
+  geom_histogram(stat = "Count") +
+  labs(x = "Age",
+       y = "Total",
+       title = "Histogram of Age Group") +
+  theme_tufte(base_size = 14) +
+  theme(legend.position = "none")
+
+TipData %>%
+  ggplot(aes(x=Meal, fill = "Red")) +
+  geom_histogram(stat = "Count") +
+  labs(x = "Meal",
+       y = "Total",
+       title = "Histogram of Meal") +
+  theme_tufte(base_size = 14) +
+  theme(legend.position = "none")
+
+TipData %>%
+  ggplot(aes(x=Payment, fill = "Red")) +
+  geom_histogram(stat = "Count") +
+  labs(x = "Payment",
+       y = "Total",
+       title = "Histogram of Payment Type") +
+  theme_tufte(base_size = 14) +
+  theme(legend.position = "none")
+
+# clean data by removing `Party` and NAs
+
+TipData_clean <- TipData %>%
+                        select(-Party) %>%
+                        drop_na()
+
+correlate(TipData_clean$Tip, TipData_clean$`Tip Percentage`)
+
+
+
+```
+
+#### Summary Findings
+\
+
+**Qualitative**
+
+`Party` has 253 NAs, which is more than half data length.
+`Day` is skewed heavily towards the weekend, with Saturdays being the busiest.
+`Age` the highest count is among Middle.
+`Meal` is outweighed by Dinner with Dinner having more than double the count of the other two meals combined.
+`Payment` displays a vast majority of users paying with Credit.
+
+Upon visual inspection of the binary variables, none seem to have any issues unless the `Comps` was the resoponse
+variable for a logistic regression. Then the 9 values of "Yes" may not be enough for accurate parameter estimation.
+
+**Quantitative**
+
+The correlation matrix displays little of note. The variables behave as expected with `Tip`, `Bill`, and `W/Tip` all being strongly positively correlated. However,`Tip.Percentage` is quite constant across the all sizes of `Bill` except for when the `Bill` is between 0 and 10 dollars, roughly. Investigating the relationships between `Bill` and `Tip.Percentage` and `Bill` and `Tip` seems to be the most intriguing.
+
+
+B. (5 points) Write a paragraph discussing any issues of measurement in the data.
+
+The main issue is that `Party` has 253 NAs, which is more than half data length. Dropping `Party` should
+be considered. As stated above, if `Comps` was the resoponse variable for a logistic regression. Then the 9 values of "Yes" may not be enough for accurate parameter estimation. 
+
+
+C. (5 points) Fit a linear regression with a single quantitative predictor, you can pick the predictor and one of tip or tip.percentage as the response, use the same response you select for all problems below. Graph the data along with the fitted line. Interpret the estimated parameters and their uncertainties. (You can write just one sentence interpreting each
+parameter in the model.)
+
+```{r d. sitting, log-MET and age}
+
+x <- TipData_clean$Bill
+y <- TipData_clean$`Tip Percentage`
+
+fit_1 <- lm(y ~ x, data=TipData_clean)
+summary(fit_1)
+
+TipData_clean %>%
+  ggplot(aes(x=Bill, y=`Tip Percentage`)) +
+  geom_point() +
+  labs(x = "Bill in Dollars",
+       y = "Tip Percentage",
+       title = "Scatter plot of Bill and Tip Percentage with Best Fit Line") +
+  theme_tufte(base_size = 14) +
+  theme(legend.position = "none") +
+  geom_smooth(method = "lm")
+
+par(mfrow = c(2, 2), oma = c(0, 0, 2, 0)) -> opar # derived from https://www.stat.auckland.ac.nz/~ihaka/787/lectures-layouts.pdf
+plot(fit_1)
+```
+
+At an intercept of 0.199, when the bill is 0 dollars, the tip percentage will be 0.199%, on average.
+
+For each additional dollar increase for the bill, on average, the tip percentage will decrease by a factor of
+-0.0008364.
+
+D. (5 points) Fit a linear regression with two predictors and an interaction. The model
+should make sense; that is, there should be a good applied reason for fitting it. Explain each of
+the estimated parameters and their uncertainties, using one sentence for each parameter.
+
+```{r d. interaction}
+
+x1 <- TipData_clean$Bill
+x2 <- TipData_clean$Alcohol
+y <- TipData_clean$`Tip Percentage`
+
+fit_2 <- lm(y ~ x1 + x2 + x1*x2, data=TipData_clean)
+summary(fit_2)
+```
+
+At an intercept of 0.204, when the bill is 0 dollars, the tip percentage will be 0.204%, on average.
+
+Adjusting for Alcohol, for each additional dollar increase for the bill, on average, the tip percentage will decrease by a factor of
+-0.0009680.
+
+Adjusting for the bill amount, tip percentage from patrons buying alcohol will be 0.0203% less than patrons not purchasing alcohol. 
+
+For patrons purchasing alcohol, the effect of `Bill` on `Tip Percentage` is -0.00968 + (0.000416*1) = -0.009264. For two patrons purchasing alcohol, we expect a patron paying one dollar more on the bill to have 0.009264 tip percentage less than those patrons paying less on their bill.
+
+Note: the model itself is significant, but neither the interaction term or `Alcohol` variable are with their standard errors almost the size of the point estimates.
+
+E. (5 points) Fit a linear regression with multiple predictors and get diagnostic plots. List the assumptions of the model and explain, in one sentence each, if these are reasonable here for this model.
+
+```{r e. diagnostics}
+
+x1 <- TipData_clean$Bill
+x2 <- TipData_clean$Tip
+y <- TipData_clean$`Tip Percentage`
+
+fit_3 <- lm(y ~ x1 + x2, data=TipData_clean)
+summary(fit_3)
+
+qplot(x = TipData_clean$Bill, y = TipData_clean$`Tip Percentage`, data = TipData_clean) +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot with Best Fit: (Tip Percentage ~ Bill + Tip)")
+
+# DIAGNOSTIC PLOTS: adapted from https://www.statmethods.net/stats/rdiagnostics.html
+
+# Normality of Residuals
+# qq plot for studentized resid
+qqPlot(fit_3, main="QQ Plot")
+
+# Evaluate homoscedasticity
+# non-constant error variance test
+ncvTest(fit_3)
+# plot studentized residuals vs. fitted values
+spreadLevelPlot(fit_3)
+
+# Evaluate Nonlinearity
+# component + residual plot
+crPlots(fit_3)
+
+# Evaluate Collinearity 
+vif(fit_3) # variance inflation factors
+sqrt(vif(fit_3)) > 2 # problem?
+
+
+
+```
+
+#### Multiple Linear Regression Assumptions
+\
+
+**Linearity** may not hold. Most of the data lies within a linear relationship except for the ends of the range as seen on the scatterplot
+
+**Multivariate Normality** does not seem to hold with the QQ-plot as the tails are quite a ways off the fit line with an S-like shape.
+
+**Multicollinearity** is possible here with a VIF above 2. A transformation may remedy the issue.
+
+
+F. (10 points) Fit two different linear regressions, each with multiple predictors. Both models should make
+sense; that is, there should be good applied reasons for fitting them. Compare the fits using
+five-fold cross validation, and in one sentence discuss what you found.
+
+```{r f. compare models}
+
+x1a <- TipData_clean$Bill
+x2a <- TipData_clean$Alcohol
+y_a <- TipData_clean$`Tip Percentage`
+
+fit_a <- lm(y_a ~ x1a + x2a, data=TipData_clean)
+summary(fit_2)
+
+x1b <- TipData_clean$Bill
+x2b <- TipData_clean$Bday
+y_b <- TipData_clean$`Tip Percentage`
+
+fit_b <- lm(y_b ~ x1b + x2b, data=TipData_clean)
+summary(fit_3)
+
+# 5-fold CV fit_a
+
+library(boot)
+set.seed(1)
+cv.error.5 <- rep(0, 5)
+for (i in 1:5) {
+  glm.fit <- glm(y_a ~ x1a + x2a, data = TipData_clean)
+  cv.error.5[i] <- cv.glm(TipData_clean, glm.fit, K = 5)$delta[1]
+}
+print("fit_a MSE vector")
+print(cv.error.5, str(mean(cv.error.5)))
+
+# 5-fold CV fit_b
+
+library(boot)
+set.seed(1)
+cv.error.5 <- rep(0, 5)
+for (i in 1:5) {
+  glm.fit <- glm(y_b ~ x1b + x2b, data = TipData_clean)
+  cv.error.5[i] <- cv.glm(TipData_clean, glm.fit, K = 5)$delta[1]
+}
+print("fit_b MSE vector")
+print(cv.error.5, str(mean(cv.error.5)))
+
+```
+
+The 5-fold cross-validation shows the two models being almost identical in average MSE error across each fold with fit_a having an average of 0.00567 and fit_b, 0.0057. This makes sense as `Alcohol` and `Bday` have comparable effects on `Bill`. Also, the adjusted R-square values are close with 0.04385 for fit_a and 0.04882 for fit_b.
+
+
+G. (10 points)  Divide the data into training and test. Fit a linear regression model with no interactions and using all available predictors that make sense to use.  Use ordinary least squares to fit the model with the training data, and then estimate MSE using the test data.
+
+```{r g. training}
+
+set.seed(1)
+split1<- sample(c(rep(0, 0.7 * nrow(TipData_clean)), rep(1, 0.3 * nrow(TipData_clean)))) # adapted from https://www.r-bloggers.com/2021/12/how-to-split-data-into-train-and-test-in-r/
+
+TipData_train<- TipData_clean %>% 
+                 slice(-c(421)) %>%
+                 mutate(split1 = split1) 
+
+train <- TipData_train[split1 == 0, ]   
+test <- TipData_train[split1 == 1, ]  
+
+x1 <- train$Bill
+x2 <- train$Tip
+x3 <- train$Alcohol
+y <- train$`Tip Percentage`
+
+fit_5 <- lm(y ~ x1 + x2 + x3, data=train)
+summary(fit_5)
+
+# MSE
+(ols_mse <- mean((y - predict.lm(fit_5, test)) ^ 2))
+
+```
+
+
+H. (20 points) Using the training data and cross-validation select two methods that we talked about in Chapter 6 of ISL, to fit a model.  Then estimate MSE using the test data. Which of the three methods OLS, and the two used here seem to fit the data best?
+
+```{r h. best subset}
+# detach(package:MASS, unload = TRUE)
+TipData_train <- TipData_train %>%
+                        select(`Tip Percentage`, Bill, Tip, Alcohol)
+
+train_t <- TipData_train[1:4] %>%
+    sample_frac(0.75)
+
+test_t <- TipData_train[1:4] %>%
+    setdiff(train_t)
+
+regfit_best_train <- regsubsets(`Tip Percentage`~., data=train_t, nvmax = 3)
+
+test_mat <- model.matrix(`Tip Percentage`~., data=test_t)
+
+val_errors <- rep(NA,3)
+
+for(i in 1:3){
+  coefi <- coef(regfit_best_train, id = i)
+  pred <- test_mat[,names(coefi)]%*%coefi
+  val_errors[i] <- mean((test_t$`Tip Percentage`-pred)^2)
+}
+
+min <- which.min(val_errors)
+min
+plot(val_errors, type = 'b')
+points(min, val_errors[min][1], col = "red", cex = 2, pch = 20)
+
+k <- 5
+set.seed(1)
+
+folds <- sample(1:k, nrow(train_t), replace = TRUE)
+cv_errors <- matrix(NA, k, 3, dimnames = list(NULL, paste(1:3)))
+
+predict.subregsubsets <- function(object, newdata, id){
+    form <- as.formula(object$call[[2]])
+    mat <- model.matrix(form, newdata)
+    coefi <- coef(object, id=id)
+    xvars <- names(coefi)
+    mat[,xvars]%*%coefi
+}
+
+for(j in 1:k) {
+  best_fit <- regsubsets(`Tip Percentage`~., data = train_t[folds !=j, 1:4], nvmax = 3)
+  for(i in 1:3) {
+    pred = predict.subregsubsets(best_fit, train_t[folds==j, 1:4], id=i)
+    cv_errors[j,i] <- mean((train_t$`Tip Percentage`[folds==j]-pred)^2)
+  }
+}
+
+(mean_cv_errors <- apply(cv_errors, 2, mean))
+(min <- which.min(mean_cv_errors))
+
+plot(mean_cv_errors, type='b')
+points(min, mean_cv_errors[min][1], col = 'red', cex = 2, pch = 20)
+
+reg_best <- regsubsets(`Tip Percentage`~., data= TipData_train[1:4], nvmax = 2)
+coef(reg_best, 2)
+```
+
+```{r h. ridge regression}
+
+# ridge reg
+x <- model.matrix(`Tip Percentage`~., TipData_train)[,-1] 
+y <- TipData_train$`Tip Percentage`
+
+grid <- 10^seq(10, -2, length = 100)
+ridge_mod <- glmnet(x, y, alpha = 0, lambda=grid)
+
+plot(ridge_mod)
+dim(coef(ridge_mod))
+ # Draw plot of coefficients
+
+plot(ridge_mod, xvar = "lambda", label = TRUE)
+
+ridge_mod$lambda[50] #Display 50th lambda value
+coef(ridge_mod)[,50] # Display coefficients associated with 50th lambda value
+sqrt(sum(coef(ridge_mod)[-1,50]^2)) # Calculate l2 norm
+
+predict(ridge_mod, s = 50, type = "coefficients")[1:4,]
+
+x_train <- model.matrix(`Tip Percentage`~., train_t)[,-1]
+x_test <- model.matrix(`Tip Percentage`~., test_t)[,-1]
+y_train <- train_t$`Tip Percentage`
+y_test <- test_t$`Tip Percentage`
+
+ridge_mod = glmnet(x_train, y_train, alpha=0, lambda = grid, thresh = 1e-12)
+ridge_pred = predict(ridge_mod, s = 4, newx = x_test)
+(ridge_mse <- mean((ridge_pred - y_test)^2))
+```
+
+```{r h. compare to ols}
+# compare to OLS
+ols_mse
+```
+
+```{r h. ridge mse}
+(ridge_mse <- mean((ridge_pred - y_test)^2))
+```
+
+```{r 5-fold}
+# 5-fold cv
+set.seed(1)
+cv.out <- cv.glmnet(x_train, y_train, alpha = 0) # Fit ridge regression model on training data
+bestlam <- cv.out$lambda.min  # Select lambda that minimizes training MSE
+bestlam
+
+plot(cv.out)
+
+ridge_pred <- predict(ridge_mod, s = bestlam, newx = x_test) # Use best lambda to predict test data
+mean((ridge_pred - y_test)^2) # Calculate test MSE
+
+out <- glmnet(x, y, alpha = 0) # Fit ridge regression model on full dataset
+predict(out, type = "coefficients", s = bestlam)[2:4,] # Display coefficients using lambda chosen by CV
+
+```
+
+The ridge regression method on the two predictor model with `Tip` and `Bill` has sightly outperformed the OLS method on the same model with MSEs of 0.002580452 and 0.002778002, respectively.
+
+I. (10 points) Write a few sentences that give any overall conclusions and study limitations.   
+
+The model does not seem robust enough for prediction. An $R^2$ value of under 0.05 and two highly correlated variables being `Bill` and `Tip` perform poorly to explain the overall variation in `Tip Percentage`. Do to the many qualitative variables, a logistic regression may be a more suitable approach.  
+
+
+# Problem 2
+
+Data for Medical School Admissions is in `MedGPA.csv`, taken from undergraduates from a small liberal arts school over several years.  We are interested in student attributes that are associated with higher acceptance rates. This problem uses Logistic Regression.
+
+    -  `Accept` = accepted (A) into medical school or denied (D)
+    -  `Acceptance` = accepted (1) into medical school or denied (0)
+    -  `Sex` = male (M) or female (F)
+    -  `BCPM` = GPA in natural sciences and mathematics
+    -  `GPA` = overall GPA
+    -  `VR` = verbal reasoning subscale score of the MCAT
+    -  `PS` = physical sciences subscale score of the MCAT
+    -  `WS` = writing samples subscale score of the MCAT
+    -  `BS` = biological sciences subscale score of the MCAT
+    -  `MCAT` = MCAT total score
+    -  `Apps` = number of schools applied to
+
+Be sure to interpret model coefficients and associated tests of significance or confidence intervals when answering the following questions.  You will be graded on the clarity of your explanations.
+
+
+```{r}
+MedGPA <- read_csv("~/Downloads/RStudio Files STA631/STA631-Exams_Lessons-rstudio-export/exam/MedGPA.csv")
+```
+
+
+A. (10 points) Compare the relative effects of improving your MCAT score versus improving your GPA on your odds of being accepted to medical school.  
+```{r a. mcat vs gpa}
+
+# clean data
+MedGPA <- as_tibble(MedGPA)
+sapply(MedGPA, function(x) sum(is.na(x))) # adapted from https://www.r-bloggers.com/2015/09/how-to-perform-a-logistic-regression-in-r/
+MedGPA_cln <- MedGPA[-54,-1] # removing row 54, only row with NA
+MedGPA_cln$MCAT <- as.integer(MedGPA_cln$MCAT)
+
+# fit model
+model <- glm(Acceptance~ MCAT + GPA, family = binomial, data=MedGPA_cln)
+summary(model)
+
+```
+
+#### Comparing Effects
+\
+
+Model: $$
+\begin{aligned}
+log\bigg(\dfrac{\hat\pi_{yes}}{\hat\pi_{no}}\bigg) &= -22.351 + 0.164(MCAT) + 4.6736(GPA) 
+\end{aligned}$$
+At a $\hat\beta_{MCAT} = 0.1642$ and controlling for GPA, the estimated odds of being accepted into med school rather than not is $exp[0.1642] = 1.17845$ times higher for an increase in 1 point on the MCAT. However, `MCAT` is not significant at $\alpha$=0.05.
+
+
+B. (10 points) After controlling for MCAT and GPA, is the number of applications related to odds of getting into medical school? 
+
+```{r b. applications}
+
+# fit model
+model <- glm(Acceptance~ MCAT + GPA + Apps, family = binomial, data=MedGPA_cln)
+summary(model)
+
+```
+
+#### Applications Effect
+\
+
+Model: $$
+\begin{aligned}
+log\bigg(\dfrac{\hat\pi_{yes}}{\hat\pi_{no}}\bigg) &= -23.67191 + 0.17263(MCAT) + 4.848(GPA) + 0.04371(Apps) 
+\end{aligned}$$
+At a $\hat\beta_{Apps} = 0.04371$ and controlling for `MCAT` and `GPA`, the estimated odds of being accepted into med school rather than not is $exp[0.04371] = 1.0468$ times higher for an increase in 1 additional application. This is quite close to 1 which may have no practical significance to the likelihood of being accepted into medical school. Also, `Apps` is not significant at $\alpha$=0.05.
+
+C. (10 points) Is there any evidence that the effect of MCAT total score or GPA differs for males and females? Remember to explain your reasoning, and discuss any tests or confidence intervals you used.
+
+```{r c. MCAT}
+
+# fit model
+model <- glm(Acceptance~ MCAT + Sex, family = binomial, data=MedGPA_cln)
+summary(model)
+
+```
+
+
+```{r c. GPA}
+
+# fit model
+model <- glm(Acceptance~ GPA + Sex, family = binomial, data=MedGPA_cln)
+summary(model)
+
+```
+
+#### Comparison by Sex
+\
+
+No meaningful difference is apparent when `Sex` is considered in comparing the effects of `MCAT` and `GPA` on the likelihood of being accepted to medical school.
+
+Both `GPA` and `MCAT` coefficients are insignificant at an $\alpha=0.05$. Also, if it were significant, the change in likelihood of acceptance would be that males are 0.311 times more likely of being accepted over females, which in practical terms, is less of a likelihood since the factor is less than 1. 
+
+D. (10 points) Build a logistic regression model with `GPA`, `MCAT`, `Apps` and `Sex` predictors, do not include interactions for this problem, if you have a predictor that is completely multicollinear with other predictors you can drop it. Write out your estimated model.
+
+```{r c. expanded model}
+
+# fit model
+model <- glm(Acceptance~ MCAT + GPA + Apps + Sex, family = binomial, data=MedGPA_cln)
+summary(model)
+
+# test for multicollinearity
+cor(MedGPA_cln[, c("MCAT", "GPA", "Apps")])
+
+```
+
+#### Final Model
+\
+
+Model: $$
+\begin{aligned}
+log\bigg(\dfrac{\hat\pi_{yes}}{\hat\pi_{no}}\bigg) &= -24.93144 + 0.18507(MCAT) + 5.28313(GPA) + 0.03308 (Apps) - 1.23776(Sex)
+\end{aligned}$$
+
+E.  (20 points) Get two different confusion matrices with different cut-off probabilities, use 0.50 for the cut-off for one confusion matrix and then try a different cut-off value as well.  Give the sensitivity, specificity and percent correct for both confusion matrixes and compare the two results.  Discuss the trade-off between sensitivity and specificity when choosing a cut-off value.   
+
+
+```{r tidy multiple log reg}
+set.seed(2005)
+# tidy MedGPA_cln
+df_final <- MedGPA_cln[, c("MCAT", "GPA", "Apps", "Sex", "Acceptance")]
+df_final <- df_final %>%
+mutate(Acceptance_bool = df_final$Acceptance,
+Acceptance = MedGPA_cln$Acceptance)
+
+multiple_logi_df_final<- logistic_reg(mode = "classification") %>%
+  set_engine('glm') %>%
+  fit(data = df_final, as.factor(df_final$Acceptance_bool) ~ MCAT + GPA + Sex + Apps)
+multiple_logi_df_final %>% tidy()
+kableExtra::kable(x = broom::tidy(multiple_logi_df_final), format = "pipe")
+```
+
+```{r conf mat}
+df_final <- df_final %>%
+  mutate(Acceptance = str_trim(ifelse(df_final$Acceptance == 1, "Accept", "Deny")))
+
+train_df <- df_final %>%
+    sample_frac(0.75)
+
+test_df <- df_final %>%
+    setdiff(train_df)
+
+predictions <- multiple_logi_df_final %>%
+  predict(test_df, type = "prob")
+
+
+df_test_pred <- bind_cols(predictions, test_df)
+
+hard_pred_0.5 <- df_test_pred %>%
+  mutate(.pred = make_two_class_pred(df_test_pred$.pred_0, levels(as_factor(Acceptance_bool)), threshold = 0.5)) %>%
+  select(Acceptance_bool, contains(".pred"))
+
+
+(hard_pred_0.5 <- hard_pred_0.5 %>%
+  count(.truth = Acceptance_bool, .pred))
+
+# threshold = 0.91
+hard_pred_0.91 <- df_test_pred %>%
+  mutate(.pred = make_two_class_pred(df_test_pred$.pred_0, levels(as_factor(Acceptance_bool)), threshold = 0.91)) %>%
+  select(Acceptance_bool, contains(".pred"))
+
+(hard_pred_0.91<- hard_pred_0.91 %>%
+  count(.truth = Acceptance_bool, .pred))
+
+```
+
+```{r h.  spec sens}
+
+# at  0.5
+tibble("At 0.5" = c("Truth: Accept", "Truth: Deny", "Percentages"), "Predicted: Accept" =c(7,0, "50%"), "Predicted: Deny" =c(3, 4, "50%"), "Percentages" = c("71.14%", "28.57%","100%"), "Sens/Spec" = c(0.7,1,""))
+ 
+# 0.75
+tibble("At 0.91" = c("Truth: Accept", "Truth: Deny", "Percentages"), "Predicted: Accept" =c(10,3, "92.86%"), "Predicted: Deny" =c(0, 1, "7.14%"), "Percentages" = c("71.14%", "28.57%","100%"), "Sens/Spec" = c(1,0.25,""))
+```
+At 50% threshold, sensitivity is at 0.7, while specificity is at 1. At 91% threshold, sensitivity increases to 1 and specificity decreases all the way to .25.. The increased sensitivity at the 91% threshold is a great improvement, but at the cost of predicting only 1 out of 4 denials from med school. It may be a better trade-off to use an in-between threshold of 75 to keep specificity high. I think you'd rather have all the applicants who were accepted by predicted to be accepted again than some be predicted to be accepted when they really weren't qualified to. Retention may be impacted, as well as performance of the pool of students. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

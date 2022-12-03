@@ -1,0 +1,590 @@
+---
+title: "Chapter 4 ISLR Classification"
+author: "Laura Kapitula"
+date: "11/4/2021, updated 11/16/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Classification
+
+-----
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, error=FALSE, warning=FALSE, comment=NA)
+# switch this to TRUE to save figures in separate files
+savefigs <- FALSE
+```
+
+## Packages used in this chapter
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(discrim)
+library(kknn)
+library(knitr)
+library(kableExtra)
+library(skimr)
+```
+Material in these notes are from the book Introduction to Statistical Learning and a Tidyverse take on using the methods given at https://beaulucas.github.io/tidy_islr/classification.html. As well as other sources such as your highly opinionated professor's head.
+
+We will use tidymodels here, [https://www.tidymodels.org/]
+
+Linear regression is concerned with predicting a quantitative response variable. What if the response variable is *qualitative*? Eye color is an example of a qualitative variable,  which takes discrete value such as `blue`, `brown`, `green`. These are also referred to as *categorical*.  We saw in the Oring example how logistic regression can be useful for modeling binomial data. 
+
+The approach of predicting qualitative responses is known as *classification*. Often, we predict the probability of the occurences of each category of a qualitative variable, and then make a decision based off of that.
+
+In chapter 4 of ISLR three of the most widely-used classifiers are discussed.  We illustrate those methods further here.
+
+* logistic regression
+* linear discriminant analysis
+* *k*-nearest neighbors
+
+
+## An Overview of Classification
+
+Classification is a common scenario.
+
+1. Person arrives at ER exhibiting particular symptoms. What illness does he have?
+2. Money is wired to an external account at a bank. Is this fraud?
+3. Email is sent to your account. Is it legit, or spam?
+
+Similar to regression, we have a set of training observations that we can use to build a classifier or estimate probabilities. We want the classifier to perform well on both training and test observations.
+
+We will use the dataset `ISLR::Default`. First, let's convert it to tidy format.
+
+```{r}
+default <- ISLR2::Default %>% as_tibble()
+```
+
+We are interested in the ability to predict whether an individual will default on their credit card payment, based on their credit card `balance` and annual income.
+
+If we look at the summary statistics, we see the data is clean, and that very few people default on their balances.
+
+```{r}
+#default %>% skimr::skim()
+```
+
+The hex scatterplot signals a strong relationship between `balance` and `default`.  The hex scatterplot can be a nice way of visualizing relationships in larger data sets.
+
+```{r}
+default %>%
+  ggplot(aes(x = balance, y = income, fill = default)) + 
+  geom_hex(alpha=2/3) #the 2/3 is transparency
+```
+
+The boxplot captures the difference in `balance` between those who default and those who do not.
+
+```{r}
+default %>%
+  ggplot(aes(y = balance, fill = default)) +
+  geom_boxplot()
+```
+
+## Why Not Linear Regression?
+
+Imagine we were trying to predict the medical outcome of a patient on the basis of their symptoms. Let's say there are three possible diagnoses: `stroke`, `overdose`, and `seizure`. We could encode these into a quantitative variable $Y$.  that takes values from 1 to 3. Using least squares, we could then fit a regression model to predict $Y$.
+
+Unfortunately, this coding implies an ordering of the outcomes. It also insists that the difference between levels is quantitative, and equivalent across all sequences of levels.
+
+Thus, changing the order of encodings would change relationship among the conditions, producing fundamentally different linear models.
+
+There could be a case where a response variables took on a natural ordering, such as `mild`, `moderate`, `severe`. We would also need to believe that the gap between each level is equivalent. Unfortunately, there is no natural way to convert a qualitative response variable with more than two levels into a quantitative response that is appropriate for linear regression.
+
+For cases of *binary* qualitative response, we can utilize the indicator(dummy) variable solution seen in Chapter 3. Linear regression will provide a fit model for this binary response scenario. However, it is possible for linear regression to produce estimates outside of the `[0, 1]` interval, which affects their interpretability as probabilities and we are clearly not fitting a model appropriate to the data. 
+
+When the qualitative response has more than two levels, we need to use classification methods that are appropriate.
+
+## Logistic Regression
+
+Let's consider the `default` dataset. Rather than modeling this response $Y$ directly, logistic regression models the *probability* that $Y$ belongs to a particular category.  It is always much more useful to model probability than to just make a prediction, as if we know the probability we can make decisions under different conditions using different assumptions and loss functions.  As we saw before when we studied probability and Baye's rule, our conditional probability of an outcome such as disease will depend on the proportions in the population of interest.
+
+If we estimate using linear regression, we see that some estimated probabilities are negative and given probability is never negative this alerts us that our model is not very good.  Our model would ideally not give nonsense values. 
+
+We are using the `tidymodels` package here.  I am learning this method of model fitting along with you but so far it seems rather nice.
+
+```{r}
+default <- default %>%
+  mutate(default_bool = if_else(default == "Yes", 1, 0))
+
+lm_default <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(data = default, default_bool ~ balance)
+
+default %>%
+  bind_cols(predict(lm_default, default)) %>%
+  ggplot(aes(x = balance)) +
+  geom_line(aes(y =  .pred)) +
+  geom_point(aes(y = default_bool, colour = default_bool)) +
+  guides(colour="none")
+```
+
+Below is the classification using logistic regression, where the probabilities fall between `0` and `1`.
+
+```{r}
+logi_default <- logistic_reg(mode = "classification") %>%
+  set_engine("glm")  %>%
+  fit(data = default, as.factor(default_bool) ~ balance) 
+
+default %>%
+  bind_cols(predict(logi_default, default, type = "prob")) %>%
+  ggplot(aes(x = balance)) +
+  geom_line(aes(y =  .pred_1)) +
+  geom_point(aes(y = default_bool, colour = default_bool)) +
+  guides(colour="none")
+```
+
+Logistic regression in this example is modelling the probability of default, given the value of `balance`.
+
+<div>
+<p style="text-align:center">Pr(`default` = `Yes`|`balance`)</p>
+</div>
+
+These values, which we abbreviate as *p*(`balance`), range between `0` and `1`. Logistic regression will always produce an *S-shaped* curve. Regardless of the value of $X$, we will receive a sensible prediction.
+
+From this, we could make a classification prediction for `default` but the probability itself is much more informative, so I would much rather report the probability than just the prediction to a client.  Similar to the reason I did not step functions I do not like just a classification without a probability because just classifying is basically binning my estimated probabilities and how I want to make a decision will vary. This to me is one of the main advantages of modeling instead of just using a heuristic method such as K Nearest Neighbors.
+
+### The Logistic Model
+
+The problem of using a linear regression model is evident in the chart above, where probabilities can fall below `0` or greater than `1`.
+
+To avoid this, we must model $p(X)$ using a function that gives outputs between `0` and `1` for all values of $X$. In logistic regression, we use the *logistic function*,
+
+<div>
+<p style="text-align:center">$p(X) = \frac{e^{\beta_0+\beta_1X}}{1+e^{\beta_0+\beta_1X}}$</p>
+<p class="vocab" style="text-align:right">*logistic function*</p>
+</div>
+
+To fit the model, we use a method called *maximum likelihood* if we are using the classical frequentist statistics method or we combine prior information with the likelihood and sample from our posterior using Bayesian methods.  The estimates obtained via MLE will typically agree with the Bayesian medians with uninformative or weakly informative priors.
+
+If we manipulate the logistic function, we find that
+
+<div>
+<p style="text-align:center">$\frac{p(X)}{1-p(X)} = e^{\beta_0+\beta_1X}$</p>
+<p class="vocab" style="text-align:right">*odds*</p>
+</div>
+
+This is called the *odds*, and takes any value from $0$ to $\infty$. This is the same type of odds used in sporting events ("9:1 odds to win this match", etc). If $p(X) = 0.9$, then odds are $\frac{0.9}{1-0.9} = 9$.
+
+If we take the logarithm of the odds, we arrive at
+
+<div>
+<p style="text-align:center">$log(\frac{p(X)}{1-p(X)}) = \beta_0+\beta_1X$</p>
+<p class="vocab" style="text-align:right">*log-odds \ logit*</p>
+</div>
+
+The left-handed side is called the *log-odds* or *logit*. The logistic regression model has a logit that is linear in $X$.
+
+The contrast to linear regression is that increasing $X$ by one-unit changes the log odds by $\beta_1$ (or the odds by $e^{\beta_1}$. However, since $p(X)$ and $X$ relationship is not a straight line (see plot above), $\beta_1$ does not correspond to the the change in $p(X)$ associated with a one-unit increase in $X$. The amount that $p(X)$ changes depends on the current value of $X$. See how the slope approaches `0` more and more slowly as `balance` increases. 
+
+Regardless of how much $p(X)$ moves, if $\beta_1$ is positive then increasing $X$ will be associated with increasing $p(X)$. The opposite is also true. 
+
+### Estimating the Regression Coefficients
+
+The coefficients in the logistic regression equation must be estimated used training data. Linear regression used the least squares approach to estimate the coefficients. Here *maximum likelihood* is typically used. 
+
+Maximum likelihood seeks to to find estimates for $\beta_0$ and $\beta_1$ such that the predicted probability $\hat{p}(x_i)$ of default for each individual corresponds as closely as possible to to the individual's observed default status. We want estimates that produce low probabilities for individuals who did not default, and high probabilities for those who did.
+
+We can examine the coefficients and other information from our logistic regression model. 
+
+```{r}
+logi_default %>% tidy()
+```
+
+If we look at the terms of our logistic regression, we see that the coefficient for `balance` is positive. This means that higher `balance` increases $p(Default)$. A one-unit increase in `balance` will increase the log odds of defaulting by about 0.0055. 
+
+The test-statistic also behaves similarly. Coefficients with large statistics indicate evidence against the null hypothesis $H_0: \beta_1 = 0$. For logistic regression, the null hypothesis implies that $p(X) = \frac{e^{\beta_0}}{1+e^{\beta_0}}$, which means that the probability of defaulting does not depend on `balance.`This is of course a nonsense hypothesis, so it is not at all informative that we rejected it.  
+
+The intercept ($\beta_0$) is typically not of interest; it's main purpose is to adjust the average fitted probabilities to the proportion of ones in the data.  Note that in Case-Control studies we can't properly estimate the $\beta_0$ but we can estimate the other $\beta$'s
+
+### Making Predictions
+
+Once we have the coefficients, we simply compute the probability of `default` for any given observation.
+
+Let's take an individual with a `balance` of `$1000`. Using our model terms, we can compute the probability. Let's extract the terms from the model and plug in a `balance` of `$1000`.
+
+```{r}
+logi_coef <- logi_default %>%
+  tidy() %>%
+  # widen it and clean up names
+  select(term, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>%
+  janitor::clean_names()
+logi_coef %>%
+  mutate(prob_1000 = exp(intercept + balance * 1000) /
+           (1 + exp(intercept + balance * 1000)))
+```
+
+We find the estimated probability to be less than `1%`.
+
+We can also incorporate qualitative predictors with the logistic regression model. Here we encode `student` in to the model.
+
+```{r}
+logi_default_student <- 
+  logistic_reg(mode = "classification") %>%
+  set_engine("glm") %>%
+  fit(data = default, as.factor(default_bool) ~ student)
+logi_default_student %>% tidy()
+```
+
+This model indicates that students have a higher rate of defaulting compared to non-students.  The idea is the same as what we learned with linear regression.
+
+Note that if we take `exp(-3.50)=0.030` we get the estimated odds for non-students.
+If we take `exp(-3.50+.40)= 0.045` we get the estimated odds for students.
+If we exponentiation the term for studentYes, `exp(0.40)=1.49` we note that the odds for students is estimated to be 1.49 times the odds for a non-student.
+
+### Multiple Logistic Regression
+
+We now consider the scenario of multiple predictors.
+
+We can rewrite $p(X)$ as
+
+<div>
+<p style="text-align:center">$p(X) = \frac{e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}{1+e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}$</p>
+<p class="vocab" style="text-align:right">/p>
+</div>
+
+And again use the maximum likelihood method to estimate the coefficients.
+
+Let's estimate the probability of  `default` using `balance`, `income` and `student`.
+
+```{r}
+multiple_logi_default<- logistic_reg(mode = "classification") %>%
+  set_engine('glm') %>%
+  fit(data = default, as.factor(default_bool) ~ balance + student + income)
+multiple_logi_default %>% tidy()
+kableExtra::kable(x = broom::tidy(multiple_logi_default), format = "pipe")
+```
+
+Notice that being a student now *decreases* the chances of default, whereas in our previous model (which only contained `student` as a predictor), it increased the chances.
+
+Why is that? This model is showing that, for a fixed value of `income` and `balance`, students actually default less. This is because `student` and `balance` are correlated.
+
+```{r}
+default %>%
+  ggplot(aes(y = balance, fill = student)) +
+  geom_boxplot()
+```
+
+
+
+If we plot the distribution of `balance` across `student`, we see that students tend to carry larger credit card balances. 
+
+This example illustrates the dangers of drawing insights from single predictor regressions when other predictors may be relevant. The results from using one predictor can be substantially different compared to using multiple predictors. This phenomenon is known as *confounding*.  This is why in observational studies we can't really say which variable is most important or how an individual variable impacts the estimated probability of success.
+
+### Logistic Regression for >2 Response Classes
+
+Sometimes we wish to classify a response variable that has more than two classes. This could be the medical example where a patient outcomes falls into `stroke`, `overdose`, and `seizure`. It is possible to extend the two-class logistic regression model into multiple-class, these methods are useful but I will not cover them here.
+
+A method that is popular for multi-class classification is *discriminant analysis*.
+
+## Linear Discriminant Analysis
+
+Logistic regression models the distribution of response $Y$ given the predictor(s) $X$. In discriminant analysis, we model the distribution of the predictors $X$ in each of the response classes, and then use Bayes' theorem to flip these around into estimates for $Pr(Y = k|X = x)$. 
+
+Why do we need this method?
+
+* Well-separated classes produce unstable parameter estimates for logistic regression models
+
+* If $n$ is small and distribution of predictors $X$ is normal across the classes, the linear discriminant model is more stable than logistic regression
+
+### Using Bayes' Theorem for Classification
+
+Consider the scenario where we want to classify an observation into one of $K$ classes, where $K >= 2$. 
+
+* Let $\pi_k$ represent the overall or *prior* probability that a randomly chosen observation comes from the $k$th class
+* Let $f_k(x) = Pr(X = x|Y = k)$ denote the *density function* of $X$ for an observation that comes from the $k$th class.
+
+In other words, $f_k(x)$ being large means that there is a high probability that an observation in the $k$th class has $X \approx x$.
+
+We can use Bayes' theorem
+
+$$
+\operatorname{Pr}(Y=k | X=x)=\frac{\pi_{k} f_{k}(x)}{\sum_{l=1}^{K} \pi_{l} f_{l}(x)}
+$$
+
+And call the left-hand side $p_k(X)$. We can plug in estimates of $\pi_k$ and $f_k(X)$ into Bayes' theorem above to get the probability of a certain class, given an observation.
+
+* Solving for $\pi_k$ is easy if we have a random sample of $Y$s from the population. We simply calculate the fraction of observations that fall into a $k$ class.
+* Estimating $f_k(X)$ is more challenging unless we assume simple forms for these densities
+
+We refer to $p_k(x)$ as the posterior probability that an observation $X = x$ belongs to the $k$th class. This is the probability that the observation belongs to the $k$th class, *given* the predictor value for that observation.
+
+The Bayes' classifier classifies an observation to the class for which $p_k(X)$ is largest. If we can find a way to estimate $f_k(X)$, we can develop a classifier that approximates the Bayes classifier.
+
+### Linear Discriminant Analysis for p = 1
+
+Let's assume we have one predictor. We need to obtain an estimate for $f_k(x)$ (the density function for $X$ given a class $k$). This will obtain a value for $p_k(x)$. We will then classify this observation for which $p_k(x)$ is greatest.
+
+To estimate $f_k(x)$, we need to make some assumptions about its form.
+
+Let's assume $f_k(x)$ is *normal* or *Gaussian*. The normal density takes the form
+
+$$
+f_{k}(x)=\frac{1}{\sqrt{2 \pi} \sigma_{k}} \exp \left(-\frac{1}{2 \sigma_{k}^{2}}\left(x-\mu_{k}\right)^{2}\right)
+$$
+
+Plugging this back in to $p_k(x)$, we obtain
+
+$$
+p_{k}(x)=\frac{\pi_{k} \frac{1}{\sqrt{2 \pi} \sigma} \exp \left(-\frac{1}{2 \sigma^{2}}\left(x-\mu_{k}\right)^{2}\right)}{\sum_{l=1}^{K} \pi_{l} \frac{1}{\sqrt{2 \pi} \sigma} \exp \left(-\frac{1}{2 \sigma^{2}}\left(x-\mu_{l}\right)^{2}\right)}
+$$
+
+Taking the log and rearranging results in 
+
+$$
+\delta_{k}(x)=x \cdot \frac{\mu_{k}}{\sigma^{2}}-\frac{\mu_{k}^{2}}{2 \sigma^{2}}+\log \left(\pi_{k}\right)
+$$
+
+In this case, the Bayes decision boundary corresponds to 
+
+$$
+x=\frac{\mu_{1}^{2}-\mu_{2}^{2}}{2\left(\mu_{1}-\mu_{2}\right)}=\frac{\mu_{1}+\mu_{2}}{2}
+$$
+
+We can simulate some data to show a simple example.
+
+In this data we have two classes:
+
+* $\mu_1 = -1.25, \mu_2 = 1.25, \sigma_1^2 = \sigma_2^2 = 1$
+
+
+```{r}
+var_1 = 1
+var_2 = var_1
+n=10000
+f_1 = tibble(fun = "f_1", x = rnorm(n = n, mean = -1.25, sd = var_1))
+f_2 = tibble(fun = "f_2", x = rnorm(n = n, mean = 1.25, sd = var_2))
+f_x = bind_rows(f_1, f_2)
+# add summary statistics
+f_x <- f_x %>%
+  group_by(fun) %>%
+  mutate(pi = n()/(2*n),
+         var = var(x),
+         mu = mean(x)) 
+decision_boundary <- f_x %>%
+  group_by(fun) %>%
+  summarise(mu = mean(x)) %>%
+  summarise(decision_boundary = sum(mu) / 2) %>%
+  pull()  #this makes decision_boundary into a constant 
+f_x %>%
+  ggplot(aes(x = x, colour = fun)) +
+  geom_density() +
+  geom_vline(xintercept = decision_boundary, linetype = "dashed")
+```
+
+
+
+These two densities overlap, and so given $X = x$, we still have uncertaintly about which class the observation belongs to. If both classes are equally likely for a random observation $\pi_1 = \pi_2$, then we see the Bayes classifier assigns the observation to class 1 if $x < 0$ and class 2 otherwise.
+
+
+Even if we are sure that $X$ is drawn from a Gaussian distribution within each class, we still need to estimate $\mu_1,...,\mu_k$, $\pi_1,...,\pi_k$, and $\sigma^2$. The *linear discriminant analysis* method approximates these by plugging in estimates as follows
+
+<div>
+<p style="text-align:center">$\hat{\mu}_k = \frac{1}{n_k}\sum_{i:y_i=k}{x_i}$</p>
+<p class="vocab" style="text-align:right">*</p>
+</div>
+
+<div>
+<p style="text-align:center">$\hat{\sigma}^2 = \frac{1}{n-K}\sum_{k=1}^{K}\sum_{i:y_i=k}{(x_i-\hat{\mu}_k)^2}$</p>
+<p class="vocab" style="text-align:right">*</p>
+</div>
+
+The estimate for $\hat{\mu}_k$ is the average of all training observations from the $k$th class. The estimate for $\hat{\sigma}^2$ is the weighted average of the sample variances for each of the K classes.
+
+To estimate $\hat{\pi}_k$, we simply take the proportion of training observations that belong to the $k$th class
+
+<div>
+<p style="text-align:center">$\hat{\pi}_k = n_k/n$</p>
+<p class="vocab" style="text-align:right">*</p>
+</div>
+
+From these estimates, we can achieve a decision boundary
+
+$$
+\hat{\delta}_{k}(x)=x \cdot \frac{\hat{\mu}_{k}}{\hat{\sigma}^{2}}-\frac{\hat{\mu}_{k}^{2}}{2 \hat{\sigma}^{2}}+\log \left(\hat{\pi}_{k}\right)
+$$
+
+This classifier has *linear* in the name due to the fact that the *discriminant function* above are linear functions of $x$.
+
+Let's take a sample from our earlier distribution and see how it performs.
+
+```{r}
+library(discrim)
+f_sample = f_x %>% sample_frac(size = 0.01)  #sample a proportion of the data
+lda_f <- discrim::discrim_linear() %>%
+  set_engine('MASS') %>%
+  fit(data = f_sample, as.factor(fun) ~ x)
+preds <- predict(lda_f, f_sample, type = "class")
+f_sample <- f_sample %>% bind_cols(preds)
+est_decision <- f_sample %>% arrange(x) %>% filter(.pred_class == 'f_2') %>%
+  slice(1) %>% pull(x)
+ggplot(f_sample, aes(x = x, fill = fun)) +
+  geom_histogram(bins=18) +
+  geom_vline(xintercept = est_decision, linetype = "dashed") +
+  geom_vline(xintercept = 0)
+```
+
+Notice the estimated decision boundary (dashed line) being very close to the Bayes decision boundary.
+
+
+### Linear Discriminant Analysis for p > 1
+
+We can extend LDA classifier to multiple predictors.
+
+The multivariate Gaussian distribution assumes that each predictor follows a one-dimensional normal distribution, with some correlation between each pair of predictors.
+
+* [Andrew Ng on Multivariate Gaussian Distribution](https://www.youtube.com/watch?v=JjB58InuTqM)
+
+To indicate that a $p$-dimensional random variable $X$ has a multi-variate Gaussian distribution, we write $ X \sim N(\mu, \Sigma)$
+
+* $E(X) = \mu$ is the mean of $X$ (a vector with $p$ components)
+* $Cov(X) = \Sigma$ is the $p*p$ covariance matrix of $X$.
+
+The multivariate Gaussian density is defined as
+
+$$
+f(x)=\frac{1}{(2 \pi)^{p / 2}|\mathbf{\Sigma}|^{1 / 2}} \exp \left(-\frac{1}{2}(x-\mu)^{T} \mathbf{\Sigma}^{-1}(x-\mu)\right)
+$$
+
+In the case of $p>1$ predictors, the LDA classifier assumes that the observations in the $k$th class are drawn from a multivariate Gaussian distribution $N(\mu_k, \Sigma)$, where $\mu_k$ is a class-specific mean vector, and $\Sigma$ is the covariance matrix that is common to all $K$ classes.
+
+Plugging the density function for the $k$th class, $f_k(X = x)$, into 
+
+$$
+\operatorname{Pr}(Y=k | X=x)=\frac{\pi_{k} f_{k}(x)}{\sum_{l=1}^{K} \pi_{l} f_{l}(x)}
+$$
+
+and performing some algebra reveals that the Bayes classifier will assign observation $X = x$ by identifying the class for which
+
+$$
+\delta_{k}(x)=x^{T} \boldsymbol{\Sigma}^{-1} \mu_{k}-\frac{1}{2} \mu_{k}^{T} \boldsymbol{\Sigma}^{-1} \mu_{k}+\log \pi_{k}
+$$
+
+is largest.
+
+#### Performing LDA on Default data
+
+If we run an LDA model on our `default` dataset, predicting the probability of `default` based off of `student` and `balance`, we achieve a respectable `3.0%` error rate.
+
+```{r}
+set.seed(1)
+lda_default <- discrim::discrim_linear() %>%
+  set_engine('MASS') %>%
+  fit(data = default, default ~ student + balance)
+preds <- predict(lda_default, default, type = "class")
+# error rate
+default %>%
+  bind_cols(preds) %>%
+  metrics(truth = default, estimate = .pred_class)
+```
+
+While this may seem impressive, let's remember that only `3.6%` of observations in the dataset end up in default. This means that if we assigned a *null* classifier, which simply predicted every observation to not end in default, our error rate would be `3.6%`. This is worse, but not by much, compared to our LDA error rate. The kap (short for kappa, not kapitula) statistic is designed to adjust the accuracy for the proportion we would get correct just by selecting the majority category.  Notice it is rather low.
+
+```{r}
+# null error rate
+default %>%
+  group_by(default) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(prop = n / sum(n))
+```
+In our data, we only have 3.3% that are defaults.
+
+Binary decision makers can make two types of errors:
+
+* Incorrectly assigning an individual who defaults to the "no default" category
+* Incorrectly assigning an individual who doesn't default to the "default" category.
+
+We can identify the breakdown by using a *confusion matrix*
+
+```{r}
+cm <- default %>%
+  bind_cols(preds) %>%
+  conf_mat(truth = default, estimate = .pred_class)
+cm
+```
+
+We see that our LDA only predicted `104` people to default. Of these, `81` actually defaulted. So, only `23` of out of the `9667` people who did not default were incorrectly labeled.
+
+However, of the `333` people in our test set who defaulted, we only predicted this correctly for `81` of them. That means `76%` of individuals who default were incorrectly classified. Having an error rate this high for the problematic class (those who default) is unacceptable. 
+
+Class-specific performance is an important concept. *Sensitivity* and *specificity* characterize the performance of a classifier or screening test. In this case, the sensitivity is the percentage of true defaults who are identified (about  `24%`). The specificity is the percentage of non-defaulters who are correctly identified (`9644/9667 ~ 99.76%`).
+
+Remember that LDA is trying to approximate the Bayes classifier, which has the lowest *total* error rate out of all classifiers (assuming Gaussian assumption is correct). The classifier will yield the smallest total number of misclassifications, regardless of which class the errors came from. In this credit card scenario, the credit card company might wish to avoid incorrectly misclassifying a user who defaults. In this case, they value sensitivity. For them, the cost of misclassifying a defaulter is higher than the cost of misclassifying a non-defaulter (which they still desire to avoid).
+
+It's possible to modify LDA for such circumstances. Given the Bayes classifier works by assigning an observation to a class in which the posterior probability $p_k(X)$ is greatest (in the two-class scenario, this decision boundary is at `0.5`), we can modify the probability threshold to suit our needs. If we wish to increase our sensitivity, we can lower this threshold.
+
+Imagine we lowered the threshold to `0.2`. Sure, we would classify more people as defaulters than before (decreasing our specificity) but we would also catch more defaulters we previously missed (increasing our sensitivity).
+
+```{r}
+preds <- predict(lda_default, default, type = "prob")
+# error rate
+default %>%
+  bind_cols(preds) %>%
+  mutate(.pred_class = as.factor(if_else(.pred_Yes > 0.2, "Yes", "No"))) %>%
+  conf_mat(truth = default, estimate = .pred_class)
+```
+
+Now our sensitivy has increased. Of the `333` people who defaulted, we correctly identified `195, or ~58.6%` of them (up from `~24%` previously).
+
+This came at a cost, as our specificity decreased. This time, we predicted `430` people to default. Of those, `195` actually defaulted. This means that `235` of the `9667` people who didn't default were incorrectly labelled. This gives us a specificity of (`9432/9667 ~ 97.6%`)
+
+Despite the overall increase in error rate, the lower threshold may be chosen, depending on the context of the problem. To make a decision, an extensive amount of *domain knowledge* is required.
+
+The *ROC curve* is a popular graphic for displaying the two types of errors for all possible thresholds. "ROC" stands for *receiver operating characteristics*.
+
+The overall performance of a classifier, summarized over all possible thresholds, is given by the *area under the (ROC) curve* (AUC). An ideal ROC curve will hug the top left corner. Think of it this way: ideal ROC curves are able to increase sensitivity at a much higher rate than reduction in specificity.
+
+We can use `yardstick::` (part of `tidymodels::`) to plot an ROC curve.
+
+```{r}
+default %>%
+  bind_cols(preds) %>%
+  roc_curve(default, .pred_No) %>%
+  autoplot()
+```
+
+We can think of the *sensitivity* as the true positive, and *1 - specificity* as the false positive.
+
+### Quadratic Discriminant Analysis
+
+LDA assumes that the observations within each class are drawn from a multivariate Gaussian distribution, with a class-specific mean vector and a covariance matrix that is common to all $K$ classes. *Quadratic discriminant analysis* (QDA) assumes that class has its own covariance matrix. 
+
+It assumes that each observation from the $k$th class has the form $X \sim N(\mu_k, \Sigma_k)$, where $\Sigma_k$ is a covariance matrix for the $k$th class. Under this assumption, the Bayes classifier assigns an observation $X=x$ to the class for which
+
+$$
+\begin{aligned} \delta_{k}(x) &=-\frac{1}{2}\left(x-\mu_{k}\right)^{T} \boldsymbol{\Sigma}_{k}^{-1}\left(x-\mu_{k}\right)-\frac{1}{2} \log \left|\boldsymbol{\Sigma}_{k}\right|+\log \pi_{k} \\ &=-\frac{1}{2} x^{T} \boldsymbol{\Sigma}_{k}^{-1} x+x^{T} \boldsymbol{\Sigma}_{k}^{-1} \mu_{k}-\frac{1}{2} \mu_{k}^{T} \boldsymbol{\Sigma}_{k}^{-1} \mu_{k}-\frac{1}{2} \log \left|\boldsymbol{\Sigma}_{k}\right|+\log \pi_{k} \end{aligned}
+$$
+
+is largest. In this case, we plug in estimates for $\Sigma_k$, $\mu_k$, and $\pi_k$. Notice the quantity $x$ appears as a quadratic function, hence the name.
+
+So why would one prefer LDA to QDA, or vice-versa? We again approach the bias-variance trade-off. With $p$ predictors, estimating a class-independent covariance matrix requires estimating $p(p+1)/2$ parameters. For example, a covariance matrix with `4` predictors would require estimating `4(4+1)/2 = 10` parameters. To estimate a covariance matrix for each class, the number of parameters is $Kp(p+1)/2$ paramters. With `50` predictors, this becomes some multiple of `1,275`, depending on $K$. The assumption of the common covariance matrix in LDA causes the model to become linear in $x$, which means there are $Kp$ linear coefficients to estimate. As a result, LDA is much less flexible clasifier than QDA, and has lower variance.
+
+
+The consequence of this is that if LDA's assumption of a common covariance matrix is significantly off, the LDA can suffer from high bias. In general, LDA tends to be a better bet than QDA when there are relatively few training observations and so reduction of variance is crucial. In contrast, with large data sets, QDA can be recommended as the variance of the classifier is not a major concern, or the assumption of a common covariance matrix for the $K$ classes is clearly not correct.
+
+Breaking the assumption of a common covariance matrix can "curve" the decision boundary, and so the use of a more flexible model (QDA) could yield better results.
+
+
+
+## A Comparison of Classification Methods
+
+Let's discuss the classification methods we have considered and the scenarios for which one might be superior.
+
+* Logistic regression
+* LDA
+* QDA
+* K-nearest neighbors
+
+There is a connection between LDA and logistic regression, particularyly in the two-class setting with $p=1$ predictor. The difference being that logistic regression estimates coefficients via maximum likelihood, and LDA uses the estimated mean and variance from a normal distribution.
+
+The similarity in fitting procedure means that LDA and logistic regression often give similar results. When the assumption that observations are drawn from a Gaussian distribution with a common covariance matrix in each class are in fact true, the LDA can perform better than logistic regression. If the assumptions are in fact false, logistic regression can outperform LDA.
+
+KNN, on the other hand, is completely non-parametric. KNN looks at observations "closest" to $x$, and assigns it to the class to which the plurality of these observations belong. No assumptions are made about the shape of the decision boundary. We can expect KNN to outperform both LDA and logistic regression when the decision boundary is highly non-linear. A downside of KNN, even when it does outperform, is its lack of interpretability. KNN does not tell us which predictors are important.
+
+QDA serves as a compromise between the non-parametric KNN method and the linear LDA and logistic regression approaches. The assumption of quadratic decision boundary allows it to accurately model a wider range of problems. It's reduced flexibility compared to KNN allows it to produce a lower variance with a limited number of training observations due to it making some assumptions about the form of the decision boundary.
+

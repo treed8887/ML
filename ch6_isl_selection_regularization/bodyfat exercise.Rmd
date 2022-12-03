@@ -1,0 +1,105 @@
+---
+title: "Model Selection Practice using the BodyFat Data"
+author: "   "
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r start, results=FALSE, warning=FALSE, message=FALSE}
+library(faraway) 
+library(tidyverse)
+theme_set(theme_classic())
+```
+
+The goal of the exercise is to practice the methods we have been learning.
+
+## Data
+
+The dataset fat is available in the library(faraway). You may have to install this library. Before installing read
+https://hpcsupport.atlassian.net/servicedesk/customer/portal/3/topic/9e49af72-b170-4f7e-ba9c-0a2cfef45cd6/article/562429973
+
+The data set contains several physical measurements of 252 males. Most of the variables can be measured with a scale or tape measure. Can they be used to predict the percentage of body fat? If so, this offers an easy alternative to an underwater weighing technique.
+
+Data frame with 252 observations on the following 19 variables.
+
+The data were supplied by Dr. A. Garth Fisher, Human Performance Research Center, Brigham Young University, Provo, Utah 84602, who gave permission to freely distribute the data and use them for non-commercial purposes. 
+
+Variables:
+
+* brozek – Percent body fat using Brozek’s equation, 457/Density - 414.2
+* siri – Percent body fat using Siri’s equation, 495/Density - 450
+* density – Density (gm/cm^2)
+* age – Age (yrs)
+* weight – Weight (lbs)
+* height – Height (inches)
+* adipos – BMI Adiposity index = Weight/Height^2 (kg/m^2)
+* free – Fat Free Weight = (1 - fraction of body fat) * Weight, using Brozek’s formula (lbs)
+* neck – Neck circumference (cm)
+* chest – Chest circumference (cm)
+* abdom – Abdomen circumference (cm) “at the umbilicus and level with the iliac crest”
+* hip – Hip circumference (cm)
+* dthigh – Thigh circumference (cm)
+* knee – Knee circumference (cm)
+* ankle – Ankle circumference (cm)
+* biceps – Extended biceps circumference (cm)
+* forearm – Forearm circumference (cm)
+* wrist – Wrist circumference (cm) “distal to the styloid processes”
+
+## Task 0 - Data Prep and Division of Data into Test and Train
+With the fat dataset in the library(faraway), we want to fit a linear model to predict body fat (variable brozek) using the other variables available, except for siri (another way of computing body fat), density (it is used in the brozek and siri formulas) and free (it is computed using brozek formula)
+
+```{r}
+library(leaps)   #function to search for the best model
+library(faraway) #has the dataset fat
+set.seed(1212)
+fat = fat %>%
+select(brozek,age,weight,height,adipos, neck , chest, 
+                              abdom ,hip, thigh , knee , 
+                              ankle ,biceps, 
+                              forearm , wrist) 
+
+train = fat %>%
+  sample_frac(0.67)
+
+test = fat %>%
+  setdiff(train)
+```
+
+Following the examples we did in class carry out the following.
+
+## Task 1: OLS
+
+In Task 1, carry out OLS on the training data.  Report the Test MSE.
+
+## Task 2: Best Subsets 
+
+In Task 2, use $R^2 (\tt{rsq})$, RSS, adjusted $R^2$, $C_p$, and BIC to carry out Best subset selection on the training data.  Report the number of predictors selected and the predictors.  Report the test MSE obtained.
+
+
+## Task 3: Best Subsets with CV
+In Task 3, do Best Subset with  Cross-Validation (CV) on the training data.  Report the number of predictors selected and the predictors.  Report the test MSE obtained.
+
+
+## Task 4: Ridge Regression
+In Task 4, do Ridge Regression on the training data, use CV to select $\lambda$. Report the test MSE obtained.
+
+## Task 5: LASSO
+In Task 5, do LASSO on the training data, use CV to select $\lambda$. Report the test error obtained, long with the number of non-zero coefficient estimates.
+
+
+## Task 6: PCR
+In Task 6, do PCR on the training data, with M chosen using cross-validation. Report the value of M and the test error obtained.
+
+
+## Task 7: PLS
+
+In Task 7, do PLS on the training data, with M chosen using cross-validation. Report the value of M and the test error obtained.
+
+## Conclusions
+Based on your analysis above is there a model that seems to work well?  Is there a method that appears to work best based on the test MSE?
+Temporarily change the seed, does it change your results?
+
+
+

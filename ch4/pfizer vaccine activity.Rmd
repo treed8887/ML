@@ -1,0 +1,85 @@
+---
+title: "Vaccine Efficacy"
+author: "Laura Kapitula"
+date: "11/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r start, results=FALSE, warning=FALSE, message=FALSE}
+library(epitools) 
+library(tidyverse)
+theme_set(theme_classic())
+```
+## Analyze 2x2 Categorical Vaccine Data
+
+Pfizer indicated they had evidence of a vaccine canditate that was found to be more than 90\% effective.  In a press-release from the 9th of November 2020.  I thought it would be interesting to do a simple categorical data analysis using R to illustrate how one might estimate effectiveness in a simple scenario.
+
+<https://www.pfizer.com/news/press-release/press-release-detail/pfizer-and-biontech-announce-vaccine-candidate-against>
+
+Pfizer indicated the vaccine candidate was found to be more than 90\% effective in preventing COVID-19 in participants 
+without evidence of prior SARS-CoV-2 infection in the first interim efficacy analysis.  The analysis evaluated 94 confirmed cases of COVID-19 in trial participants, and the study enrolled 43,538 participants.  Safety and additional efficacy data continue to be collected  but I thought it would be interesting to do a quick study to help us understand what might be going on.  Note that they probably have more complicated models with stratification and might be using a Poisson model or other Generalized Linaer Model to get estimates but for simplification sake we will make some assumptions and illustrate. 
+
+If Efficacy is 0.90 and we have 94 cases, 
+Efficacy is defined as:
+$$E = 1 -\frac{ARV}{ARU}$$
+where $ARV$ is attack rate in vaccinated (proportion in vaccinated group who get sick)
+and $ARU$ is attack rate in unvaccinated, if we assume equal counts are randomized to the treatement and control condition and do some algebra if we have $E=0.90$ and 94 cases,  we get 10.4 cases in vaccinated group, since they said more than 90% we can round down to 10.
+So that means we have 10 cases in the vaccinated group and 84 in the unvaccinated group, and 21,769 people in each group.  
+
+
+1. Estimate $\hat p$ for each group and give the standard error of the estimate and a 95\% confidence interval.
+
+```{r}
+n <- 21769 #in each group
+y <- c(84,10)
+
+#finish
+```
+
+2.  Next estimate $p_{uv} - p_v$ and give the standard error of the estimate.
+
+```{r}
+
+
+
+```
+We typically are interested in the ratio of cases if vaccinated compared to cases if not vaccinated.  This is called a Risk Ratio.  
+
+
+```{r vaccine}
+#below uses epitools package
+# The 1stline below creates the contingency table; the 2nd line prints the table so you can check the orientation
+RRtable<-matrix(c(21685,21759,84,10),nrow = 2, ncol = 2)
+RRtable
+# The next line asks R to compute the RR and 95% confidence interval
+rrout=riskratio.wald(RRtable)
+rrout
+#do 1-rrout to get the riskratio
+1-rrout$measure
+```
+## Bar Chart
+```{r}
+cases <- tibble(
+   treatment = c("Not Vaccinated", "Vaccinated"),
+   Cases = c(84, 10)
+ )
+ggplot(data = cases, mapping = aes(x = treatment, y = Cases, fill=treatment) )+
+   geom_col()+
+ ggtitle("Cases of Covid-19 Assuming Equal Numbers in Each Group") +
+   xlab(" ") + ylab("Number of Cases")+ theme(legend.position="none")
+```
+
+3.  Is vaccination status and disease status independent in the data?
+
+
+
+4.  Is there evidence in regards to the associaton between vaccination status and disease status in the population?
+
+
+
+5.  Can we make a causal inference based on these data?  Why or why not?

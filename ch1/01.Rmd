@@ -1,0 +1,469 @@
+---
+title: 'STA631 ROS Chapter 1: Overview'
+author: "Laura Kapitula"
+date: "`r format(Sys.Date())`"
+output:
+  word_document: default
+  html_document: default
+---
+Working through examples in *Regression and Other Stories* by Gelman, Hill and Vehtari. Original RMD files were Solomon Kurz's versions of examples from ROS that he originally edited but they have been heavily edited by Professor Kapitula.
+
+The first code block below sets our options for Rmarkdown, By default, errors in the code chunks of an Rmd document will halt R. Below sets global options, by setting error=TRUE we allow the Rmd file to knit even if we make a mistake, suppressing messages and warnings keeps us from seeing all the messages and warnings that clutter up our document.
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(fig.retina = 2.5)
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(error=TRUE, message=FALSE, warning=FALSE)
+# options(width = 100)
+```
+
+# Overview
+
+Recall from lecture and the book:
+
+## 1.1 The three challenges of statistics
+
+> The three challenges of statistical inference are:
+> 
+> 1. *Generalizing from sample to population*, a problem that is associated with survey sampling but actually arises in nearly every application of statistical inference;
+> 2. *Generalizing from treatment to control group*, a problem that is associated with causal inference, which is implicitly or explicitly part of the interpretation of most regressions we have seen; and
+> 3. *Generalizing from observed measurements to the underlying constructs of interest*, as most of the time our data do not record exactly what we would ideally like to study. (p. 3, *emphasis* in the original)
+
+## 1.2 Why learn regression?
+
+"Regression is a method that allows researchers to summarize how predictions or average values of an *outcome* vary across individuals defined by a set of *predictors*" (p. 4, *emphasis* in the original). To get a sense, load the `hibbs.dat` data.
+
+We are going to use the tidyverse for working with our data in this course.  I know that many of you are beginners to R.  An excellent review of some concepts from Introductory Statistics and an introduction to R and the tidyverse is available in the text book [Modern Dive](https://moderndive.com/index.html).  We have worked through some of that in the first two labs and it will be a nice resource for you to review introductory Statistics material and to look at R code.
+
+The first thing we will always need to do is load our libraries.  We always will load the tidyverse library.  We load a couple libraries below as well so we can replicate some of the plots in the book.
+
+```{r}
+library(tidyverse)
+library(ggpmisc) #this is a package that allows putting the equation of the line and R-square on the graph
+library(patchwork) #for putting ggplot2 plots together
+library(rstanarm)
+hibbs <- read_table2("ROS-Examples-master/ElectionsEconomy/data/hibbs.dat")
+glimpse(hibbs)
+```
+The glimpse() function will give you the first few entries of each variable in a row after the variable name and the data type of the variable.  Here, <dbl> stands for a real valued variable and <chr> stands for a character variable.  You also can have integer valued variables <int> for integers such as counts.
+
+Below we make a basic scatter plot with a linear regression line.
+
+```{r, warning = F, message = F}
+
+ggplot(hibbs, aes(x = growth, y = vote, label=year)) +
+  geom_point() +
+   labs(subtitle = "Forecasting the election from the economy",
+       x = "Average recent growth in personal income (%)",
+       y = "Incumbent party's vote share (%)") +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+If we want to make the left panel in Figure 1.1, we can add more to control formatting and add in the text labels.
+
+Make the left panel of Figure 1.1. Before we save the figure, we'll alter the default **ggplot2** theme.
+
+```{r, warning = F, message = F}
+
+#use the them below if you want it to more closely match what is in ROS
+theme_set(theme_linedraw() + theme(panel.grid = element_blank())+theme(strip.background =element_rect(fill="white"))+
+  theme(strip.text = element_text(colour = 'black')) )
+#below we save the plot into the object p1
+p1 <- ggplot(hibbs, aes(x = growth, y = vote, label=year)) +
+     geom_text(size = 3) +
+  scale_x_continuous(labels = function(x) str_c(x, "%")) +
+  scale_y_continuous(labels = function(x) str_c(x, "%")) +
+   labs(subtitle = "Forecasting the election from the economy",
+       x = "Average recent growth in personal income",
+       y = "Incumbent party's vote share ") 
+
+p1
+```
+
+Now make Figure 1.1b 
+
+```{r, warning = F, message = F, fig.width = 8, fig.height = 3.5}
+
+
+x<-hibbs$growth
+y<-hibbs$vote
+p2 <- 
+  ggplot(hibbs, aes(x = growth, y = vote, label=year)) +
+ 
+  scale_x_continuous(labels = function(x) str_c(x, "%")) +
+  scale_y_continuous(labels = function(x) str_c(x, "%")) +
+   labs(subtitle = "Forecasting the election from the economy",
+       x = "Average recent growth in personal income",
+       y = "Incumbent party's vote share ") +
+   geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x) +
+   stat_poly_eq(formula = y ~ x, 
+                aes(label = paste(..eq.label..,sep = "~~~")), 
+                parse = TRUE) +     
+  geom_point() 
+
+#below requires patchwork package and it puts the two graphs together and makes their axis the same.
+
+p1 + p2 &
+  coord_cartesian(xlim = c(-0.5, 4.5),
+                  ylim = c(42, 63))
+
+```
+
+Some of the more important applications for regression are
+
+* prediction,
+* exploring associations,
+* extrapolation, and
+* causal inference.
+
+## 1.3 Some examples of regression
+
+"To give a sense of the difficulties involved in applied regression, [Gelman et al] briefly discuss[ed] some examples involving sampling, prediction, and causal inference" (p. 5).
+
+### 1.3.1 Estimating public opinion from an opt-in internet survey.
+
+### 1.3.2 A randomized experiment on the effect of an educational television program.
+
+In this section we analyzed data from an educational television program called the Electric Company.
+
+```{r, message = F, warning = F}
+electric <- read_csv("ROS-Examples-master/ElectricCompany/data/electric.csv")
+glimpse(electric)
+```
+Let's start by making a simplified version of the plot given in Figure 1.2.
+```{r, fig.width = 8, fig.height = 2.5}
+
+#The mutate function is used to set up the labels for the grades and control and treatment groups
+# grade is just stored as a number we make it into a string with Grade in front of the number.
+# We give labels for the Treatment and Control Classes, the \n is a line break.
+
+#the %>% is a pipe, it means, take the thing and do what is next to it, mutate is what we use to make new variables.
+
+electric %>% 
+  mutate(grade = str_c("Grade ", grade),
+         class = ifelse(treatment == 0, "Control\nclasses", "Treated\nclasses")) %>%
+ggplot(mapping = aes(x = post_test)) +
+  geom_histogram(binwidth = 4, color = "white") +
+  facet_grid(class~grade, switch = "y")
+
+```
+If we want to work on it some more to make it look more like Figure 1.2 we can add the mean lines and change some formats.
+
+Make Figure 1.2.
+
+```{r, fig.width = 8, fig.height = 2.5}
+#we start here by prepping the data a bit
+electric2=electric %>% 
+  mutate(grade = str_c("Grade ", grade),
+         class = ifelse(treatment == 0, "Control\nclasses", "Treated\nclasses")) %>% 
+  # the next two lines are for the panel-wise mean lines
+  group_by(grade, class) %>% 
+  mutate(mean = mean(post_test))
+  
+  ggplot(electric2,aes(x = post_test)) +
+  geom_histogram(fill = "grey67", binwidth = 4, boundary = 0) +
+  geom_vline(aes(xintercept = mean)) +
+  scale_x_continuous("Post-treatment classroom-average test scores, lines represent the average value.", breaks = 2:4 * 25) +
+  scale_y_continuous(NULL, breaks = NULL, expand = expansion(mult = c(0, 0.05))) +
+  facet_grid(class~grade, switch = "y")
+
+```
+It looks like we have more impacts in the earlier grades, not surprising given the nature of the program is to improve early reading and perhaps by grade3 and 4 kids already know how to read.  In order to make valid conclusions we would want to adjust for pre-test score.  Even though randomization occured in this study it is such an important individual level predictor of post-test scores we would want to adjust for it in some way.
+
+```{r}
+ggplot(data = electric2, mapping = aes(x = pre_test, y = post_test, color=grade)) + 
+  geom_point(alpha=.6)+
+    labs(x = "Pre-test score", y = "Post-test Score", color = NULL) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+### 1.3.3 Estimating the effects of United Nations peacekeeping, using pre-treatment variables to adjust for differences between treatment and control groups.
+
+To make Figure 1.3, we need the `pk&pkept_old.dta` data.
+
+```{r}
+peace <- haven::read_dta("ROS-Examples-master/Peacekeeping/data/pk&pkept_old.dta")
+
+# glimpse(peace)
+```
+
+Figure 1.3 will require some data wrangling (see [https://github.com/avehtari/ROS-Examples/blob/master/Peacekeeping/peace.Rmd](https://github.com/avehtari/ROS-Examples/blob/master/Peacekeeping/peace.Rmd)).
+
+```{r, fig.width = 8, fig.height = 3}
+# wrangle, try to guess what the code below is doing?  Write comments.
+peace <-
+  peace %>% 
+  mutate(censored     = morewar == 0,  # indicator variable that is one if more war is 0
+         badness      = log(hazard1),  # Aki made this, but it isn't needed for this plot
+         peacekeepers = pk_dum == 1) %>% 
+  mutate(faildate = ifelse(is.na(faildate) & !is.na(cfdate), as.Date("2004-12-31"), faildate) %>% as.Date(., origin = "1970-01-01")) %>% 
+  mutate(delay = as.numeric(faildate - cfdate) / 365.24) %>% 
+  mutate(ok = pcw == 1 & !is.na(delay))
+
+peace %>% 
+  filter(ok == T, censored == F) %>% 
+  # to make the facet labels pretty
+  mutate(peacekeepers = factor(peacekeepers,
+                               levels = c(T, F),
+                               labels = c("With peacekeeping: 56% of countries stayed at peace.\nFor others, histogram of time until civil war returned:",
+                                          "Without peackeeping: 34% stayed at peace.\nFor others, histogram of time until civil war returned:"))) %>% 
+  
+  # plot!
+  ggplot(aes(x = delay)) +
+  geom_histogram(boundary = 0, binwidth = 0.5) +
+  scale_x_continuous("Years until return of war", limits = c(0, 8)) +
+  facet_wrap(~peacekeepers, scales = "free_y")
+```
+
+Figure 1.4.
+
+```{r, fig.width = 8, fig.height = 3.25}
+# new variables
+peace <-
+  peace %>% 
+  mutate(ok2      = ifelse(ok == T & !is.na(badness), T, F),
+         badness2 = badness / 2 + 8) 
+
+# wrangle
+peace %>% 
+  filter(ok2 == T) %>% 
+  # to make the facet labels pretty
+  mutate(peacekeepers = factor(peacekeepers,
+                               levels = c(F, T),
+                               labels = c("Without U.N. peacekeeping",
+                                          "With U.N. peacekeeping"))) %>%
+  mutate(peacekeepers = fct_rev(peacekeepers),
+         censored = factor(censored,
+                           levels = c(T, F),
+                           labels = c("censored", "not censored"))) %>% 
+  
+  #plot!
+  ggplot(aes(x = badness2, y = delay)) + 
+  geom_point(aes(shape = censored)) +
+  scale_shape_manual(NULL, values = c(1, 19)) +
+  scale_x_continuous("Pre−treatment measure of problems with the country",
+                     breaks = quantile(filter(peace, ok2 == T) %>% pull(badness2), probs = c(.05, .95)),
+                     labels = c("not so bad", "really bad")) +
+  ylab("Delay (in years) before return of conflict\n(open circles where conflict did not return)") +
+  theme(legend.background = element_blank(),
+        legend.position = c(.92, .9)) +
+  facet_wrap(~peacekeepers)
+``` 
+
+### 1.3.4 Estimating the effect of gun laws, and the difficulty of inference using regression with a large number of predictors.
+
+### 1.3.5 Comparing the peacekeeping and gun-control studies.
+
+## 1.4 Challenges in building, understanding, and interpreting regressions
+
+"We can distinguish two different ways in which regression is used for causal inference: estimating a relationship and adjusting for background variables" (p. 10).
+
+### 1.4.1 Regression to estimate a relationship of interest.
+
+If you go to [https://github.com/avehtari/ROS-Examples/blob/master/SimpleCausal/SimpleCausal.Rmd](https://github.com/avehtari/ROS-Examples/blob/master/SimpleCausal/SimpleCausal.Rmd), you'll see the data for this section are simulated. 
+
+Simulations, are very helpful for understanding what is going on with a fitted or theoretical model.
+
+```{r}
+n <- 50 #set the sample size
+
+# Vehtari did not include a seed number in his code
+set.seed(1)  #set a random number seed, this allows your code to be replicated, use 1 to agree with me, use another number to get different quasi-random numbers
+#runif randomly samples from the uniform distribution
+#rnorm randomly samples from the normal distribution, a tibble is a special tidyverse type of table.
+
+d <-
+  tibble(x = runif(n, 1, 5)) %>% 
+  mutate(y        = rnorm(n, 10 + 3 * x, 3),
+         x_binary = ifelse(x < 3, 0, 1))
+
+head(d)
+```
+
+
+```{r}
+d %>%
+  group_by(x_binary) %>%
+  summarize(mean=mean(y, na.rm=TRUE))
+
+```
+Calculate the difference between the two means.  
+
+\\
+\\
+
+Fit the model, using the usual least squares regression.
+
+```{r m1.2a}
+m1.2a <-
+  lm(data = d, y ~  x_binary)
+summary(m1.2a)
+```
+What do you notice?
+\\
+\\
+
+```{r m1.2b}
+m1.2b <-
+    lm(data = d, y ~  x)
+summary(m1.2b)
+ 
+```
+
+Make plots
+
+```{r}
+
+ggplot(d, aes(x = x_binary, y = y)) +
+  geom_point() +
+   geom_smooth(method = "lm", se = FALSE)+
+labs(subtitle = "Regression with binary treatment",
+       y = "Outcome measurement")+
+   scale_x_continuous(NULL, 
+                     breaks = 0:1)
+```
+
+
+
+
+```{r}
+
+ggplot(d, aes(x = x, y = y)) +
+  geom_point() +
+   geom_smooth(method = "lm", se = FALSE)+
+labs(subtitle = "Regression with quantitative predictor",
+       y = "Outcome measurement")
+
+```
+
+
+
+The next two models require a little more simulation. Here we compare what happens when we use a linear model to model a non-linear relationship.
+
+```{r}
+set.seed(1)
+
+d <-
+  d %>% 
+  mutate(y = rnorm(n, mean = 5 + 30 * exp(-x), sd = 2))
+```
+
+
+Make plots
+
+```{r m1.3a}
+# linear
+ggplot(d, aes(x = x, y = y)) +
+  geom_point() +
+   geom_smooth(method = "lm", se = FALSE)+
+labs(subtitle = "Regression Modeling a non-linear relationship with a linear function",
+       y = "Outcome measurement")
+```
+
+
+```{r m1.3b}
+# non-linear
+ggplot(d, aes(x = x, y = y)) +
+  geom_point() +
+   geom_smooth(formula= y~exp(-x), method=lm,se = FALSE)+
+labs(subtitle = "non-linear effect",
+       y = "Outcome measurement")
+```
+
+
+### 1.4.2 Regression to adjust for differences between treatment and control groups.
+
+Once again we have an example with simulated data.
+
+```{r}
+n <- 100
+
+set.seed(1)
+
+d <-
+  tibble(xx = rnorm(n, mean = 0, sd = 1)^2,
+         z  = rep(0:1, n / 2)) %>% 
+  mutate(yy = rnorm(n, mean = 20 + 5 * xx + 10 * z, sd = 3))
+
+d
+```
+
+Fit the model.
+
+```{r m1.4}
+m1.4 <-
+    lm(data = d, yy ~  xx +z)
+summary(m1.4)
+ 
+```
+
+Here if we want to plot the relationship we want to plot the lines as having the same slope, given the model does not have an interaction.   The geom_smooth() function in the ggplot2 package does not have an easy  way to plot parallel slopes models. An example, is given in [Modern Dive](https://moderndive.com/6-multiple-regression.html#model4table) that shows us how to use  geom_parallel_slopes() in the moderndive package. 
+
+```{r}
+library(moderndive)
+d %>%
+  mutate(z=as.factor(z)) %>% #treat z as categorical
+ggplot( aes(x = xx, y = yy, color = z )) +
+  geom_point() +
+   geom_parallel_slopes(se = FALSE)
+
+```
+
+### 1.4.3 Interpreting coefficients in a predictive model
+
+read through this section.
+
+
+
+### 1.4.4 Building, interpreting, and checking regression models.
+
+The authors proposed the statistical model workflow has four basic steps:
+
+1. Model building
+2. Model fitting
+3. Understanding the model fits
+4. Criticism
+
+## 1.5 Classical and Bayesian inference
+
+> As statisticians, we spend much of our effort fitting models to data and using those models to make predictions. These steps can be performed under various methodological and philosophical frameworks. Common to all these approaches are three concerns: (1) what *information* is being used in the estimation process, (2) what *assumptions* are being made, and (3) how estimates and predictions are *interpreted*, in a classical or Bayesian framework. (p. 13, *emphasis* in the original)
+
+### 1.5.1 Information.
+
+### 1.5.2 Assumptions
+
+### 1.5.3 Classical inference.
+
+### 1.5.4 Bayesian inference.
+
+## 1.6 Computing least squares and Bayesian regression
+
+We will fit Bayesian models in **R** using the `stan_glm()` function. Lets compare stan_glm and lm for a simple model. Given a data set called `my_data` containing a criterion variable `y` and a single predictor variable `x`, you can fit a basic linear regression model with `stan_glm()` like so.
+
+```{r}
+m1.6 <-
+    stan_glm(data = d, yy ~  xx +z, refresh=0)
+print(m1.6)
+```
+
+```{r}
+m1.6 <-
+    lm(data = d, yy ~  xx +z)
+summary(m1.6)
+```
+## Session info {-}
+
+```{r}
+sessionInfo()
+```
+
+```{r, warning = F, echo = F, eval = F}
+rm(list = ls())
+```
+
+```{r, echo = F, message = F, warning = F, results = "hide", eval = F}
+ggplot2::theme_set(ggplot2::theme_grey())
+#below unloads all packages
+pacman::p_unload(pacman::p_loaded(), character.only = TRUE)
+```
+

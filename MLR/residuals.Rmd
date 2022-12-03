@@ -1,0 +1,217 @@
+---
+title: "Regression and Other Stories: Residuals"
+author: "Laura Kapitula"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    theme: readable
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_download: true
+---
+Plotting the data and fitted model. See Chapter 11 in Regression
+and Other Stories.
+ Edited version of original file by: Andrew Gelman, Jennifer Hill, Aki Vehtari 
+
+-------------
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, error=FALSE, warning=FALSE, comment=NA)
+# switch this to TRUE to save figures in separate files
+savefigs <- FALSE
+```
+
+#### Load packages
+
+```{r }
+library("rstanarm")
+library(tidyverse)
+```
+
+## Simple model with const term, one pre-treatment predictor, and treatment indicator
+
+#### Fake data
+
+```{r }
+N <- 100
+x <- runif(N, 0, 1)
+z <- sample(c(0, 1), N, replace=TRUE)
+a <- 1
+b <- 2
+theta <- 5
+sigma <- 2
+y <- a + b*x + theta*z +  rnorm(N, 0, sigma)
+fake <- data.frame(x=x, y=y, z=z)
+summary(fake)
+```
+
+
+```{r}
+
+ggplot(fake, aes(x=x, y=y, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+    labs(x = "Pre-treatment predictor, x", y = "Outcome, y")
+```
+
+#### Model
+
+```{r }
+fit <- stan_glm(y ~ x + z, data=fake, refresh = 0)
+print(fit)
+```
+
+#### Add predicted lines to our plot.
+```{r }
+
+#predicted is the y-hats, predicted values, using the model
+#then we calculate the residuals as the actual value - the predicted value. 
+fake2 <- fake %>%
+  mutate(predicted=predict(fit), resid=y-predict(fit)) 
+ggplot(fake2, aes(x=x, y=y, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+  geom_line(aes(x=x, y=predicted, shape=as.factor(z), color=as.factor(z))) +
+ xlab("Predicted Outcome (y-hat)") + ylab("Residual")
+
+```
+#### Create a Residual Plot 
+
+In general it is good practice to plot the residuals vs. the fitted values. Below is all on one plot.
+
+```{r }
+
+#predicted is the y-hats, predicted values, using the model
+#then we calculate the residuals as the actual value - the predicted value. 
+
+ggplot(fake2, aes(x=predicted, y=resid, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "gray")
+ 
+```
+We also could make this graph as a facet graph.  Note that I am rewriting the book code using ggplot but I am fine with you coding your plots and things either way.  
+```{r }
+
+#predicted is the y-hats, predicted values, using the model
+#then we calculate the residuals as the actual value - the predicted value. 
+
+ggplot(fake2, aes(x=predicted, y=resid, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "gray") +
+  facet_grid(. ~ as.factor(z), scales="free_x") +
+ xlab("Predicted Outcome (y-hat)") + ylab("Residual")
+ 
+```
+
+Below is the book way.
+
+```{r }
+par(mfrow=c(1,2), mar=c(3,3,2,2), mgp=c(1.7,.5,0), tck=-.01)
+for (i in 0:1){
+  plot(range(x), range(y), type="n", xlab="Pre-treatment predictor, x", ylab="Outcome, y", main=paste("z =", i), bty="l")
+  points(x[z==i], y[z==i], pch=20+i)
+  abline(coef(fit)["(Intercept)"] + coef(fit)["z"]*i, coef(fit)["x"])
+}
+```
+## More complicated model with multiple pre-treatment predictors.
+
+#### Fake data
+
+In this section we extend the model where we have K predictors.  The true model is:
+
+$$ y = b_o + b_1x_1 + ... + b_kx_k + \theta z + error $$
+Where z is binary.    Below is our code to generate fake data.
+
+```{r }
+N <- 100
+K <- 10
+X <- array(runif(N*K, 0, 1), c(N, K))
+z <- sample(c(0, 1), N, replace=TRUE)
+a <- 1
+b <- 1:K
+theta <- 10
+sigma <- 5
+y <- a + X %*% b + theta*z +  rnorm(N, 0, sigma)
+fake <- data.frame(X=X, y=y, z=z)
+```
+Summarize our fake data to make sure it is what we expect.
+```{r}
+summary(fake)
+#cor(fake)
+```
+
+#### Model
+Then we fit the model and store the results in fit.
+```{r }
+fit <- stan_glm(y ~ X + z, data=fake, refresh = 0)
+print(fit)
+```
+
+#### Plot Predictor vs Outcome
+
+```{r }
+
+#predicted is the y-hats, predicted values, using the model
+#then we calculate the residuals as the actual value - the predicted value. 
+fake2 <- fake %>%
+  mutate(predicted=predict(fit), resid=y-predict(fit)) 
+ggplot(fake2, aes(x=predicted, y=y, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+  facet_grid(. ~ as.factor(z)) +
+ xlab("Linear Predictor (y-hat)") + ylab("Outcome, y")
+ 
+```
+#### Book Way for Predictor vs. Outcome
+
+```{r }
+y_hat <- predict(fit)
+par(mfrow=c(1,2), mar=c(3,3,2,2), mgp=c(1.7,.5,0), tck=-.01)
+par(mfrow=c(1,2), pty="s")
+for (i in 0:1){
+  plot(range(y_hat,y), range(y_hat,y), type="n", xlab=expression(paste("Linear predictor, ", hat(y))), ylab="Outcome, y", main=paste("z =", i), bty="l")
+  points(y_hat[z==i], y[z==i], pch=20+i)
+abline(0, 1)
+}
+```
+
+
+#### Plot Predictor vs Residual
+
+```{r }
+
+#predicted is the y-hats, predicted values, using the model
+#then we calculate the residuals as the actual value - the predicted value. 
+
+ggplot(fake2, aes(x=predicted, y=resid, shape=as.factor(z), color=as.factor(z)) )+
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "gray") +
+  facet_grid(. ~ as.factor(z), scales="free_x") +
+ xlab("Predicted Outcome (y-hat)") + ylab("Residual")
+ 
+```
+
+#### What happens if there is Interaction but we miss it?
+Below redo the simple example but add an interaction effect when you generate the fake data.
+set the coefficient for the interaction to 20. What do you observe?
+
+
+
+
+Once you fit the model with out an interaction, add the interaction and take a look at how the plots change.
+
+
+
+
+
+
+
+
+
+
+
+#### What happens if there is non-constant variance?
+Below redo the simple example but make the variance non-constant for different levels of x when you make the fake data.  The error term will be:
+
+ error $\sim$ N(0, function(x){1+0.5*x}) 
+
+

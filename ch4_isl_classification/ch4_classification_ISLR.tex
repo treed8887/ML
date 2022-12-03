@@ -1,0 +1,1647 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Chapter 4 ISLR Classification},
+  pdfauthor={Laura Kapitula},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Chapter 4 ISLR Classification}
+\author{Laura Kapitula}
+\date{11/4/2021, updated}
+
+\begin{document}
+\maketitle
+
+\hypertarget{classification}{%
+\section{Classification}\label{classification}}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\hypertarget{packages-used-in-this-chapter}{%
+\subsection{Packages used in this
+chapter}\label{packages-used-in-this-chapter}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(tidymodels)}
+\FunctionTok{library}\NormalTok{(discrim)}
+\FunctionTok{library}\NormalTok{(kknn)}
+\FunctionTok{library}\NormalTok{(knitr)}
+\FunctionTok{library}\NormalTok{(kableExtra)}
+\FunctionTok{library}\NormalTok{(skimr)}
+\end{Highlighting}
+\end{Shaded}
+
+Material in these notes are from the book Introduction to Statistical
+Learning and a Tidyverse take on using the methods given at
+\url{https://beaulucas.github.io/tidy_islr/classification.html}. As well
+as other sources such as your highly opinionated professor's head.
+
+We will use tidymodels here, {[}\url{https://www.tidymodels.org/}{]}
+
+Linear regression is concerned with predicting a quantitative response
+variable. What if the response variable is \emph{qualitative}? Eye color
+is an example of a qualitative variable, which takes discrete value such
+as \texttt{blue}, \texttt{brown}, \texttt{green}. These are also
+referred to as \emph{categorical}. We saw in the Oring example how
+logistic regression can be useful for modeling binomial data.
+
+The approach of predicting qualitative responses is known as
+\emph{classification}. Often, we predict the probability of the
+occurences of each category of a qualitative variable, and then make a
+decision based off of that.
+
+In chapter 4 of ISLR three of the most widely-used classifiers are
+discussed. We illustrate those methods further here.
+
+\begin{itemize}
+\tightlist
+\item
+  logistic regression
+\item
+  linear discriminant analysis
+\item
+  \emph{k}-nearest neighbors
+\end{itemize}
+
+\hypertarget{an-overview-of-classification}{%
+\subsection{An Overview of
+Classification}\label{an-overview-of-classification}}
+
+Classification is a common scenario.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Person arrives at ER exhibiting particular symptoms. What illness does
+  he have?
+\item
+  Money is wired to an external account at a bank. Is this fraud?
+\item
+  Email is sent to your account. Is it legit, or spam?
+\end{enumerate}
+
+Similar to regression, we have a set of training observations that we
+can use to build a classifier or estimate probabilities. We want the
+classifier to perform well on both training and test observations.
+
+We will use the dataset \texttt{ISLR::Default}. First, let's convert it
+to tidy format.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\OtherTok{\textless{}{-}}\NormalTok{ ISLR2}\SpecialCharTok{::}\NormalTok{Default }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+We are interested in the ability to predict whether an individual will
+default on their credit card payment, based on their credit card
+\texttt{balance} and annual income.
+
+If we look at the summary statistics, we see the data is clean, and that
+very few people default on their balances.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#default \%\textgreater{}\% skimr::skim()}
+\end{Highlighting}
+\end{Shaded}
+
+The hex scatterplot signals a strong relationship between
+\texttt{balance} and \texttt{default}. The hex scatterplot can be a nice
+way of visualizing relationships in larger data sets.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ balance, }\AttributeTok{y =}\NormalTok{ income, }\AttributeTok{fill =}\NormalTok{ default)) }\SpecialCharTok{+} 
+  \FunctionTok{geom\_hex}\NormalTok{(}\AttributeTok{alpha=}\DecValTok{2}\SpecialCharTok{/}\DecValTok{3}\NormalTok{) }\CommentTok{\#the 2/3 is transparency}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+The boxplot captures the difference in \texttt{balance} between those
+who default and those who do not.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{ balance, }\AttributeTok{fill =}\NormalTok{ default)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\hypertarget{why-not-linear-regression}{%
+\subsection{Why Not Linear
+Regression?}\label{why-not-linear-regression}}
+
+Imagine we were trying to predict the medical outcome of a patient on
+the basis of their symptoms. Let's say there are three possible
+diagnoses: \texttt{stroke}, \texttt{overdose}, and \texttt{seizure}. We
+could encode these into a quantitative variable \(Y\). that takes values
+from 1 to 3. Using least squares, we could then fit a regression model
+to predict \(Y\).
+
+Unfortunately, this coding implies an ordering of the outcomes. It also
+insists that the difference between levels is quantitative, and
+equivalent across all sequences of levels.
+
+Thus, changing the order of encodings would change relationship among
+the conditions, producing fundamentally different linear models.
+
+There could be a case where a response variables took on a natural
+ordering, such as \texttt{mild}, \texttt{moderate}, \texttt{severe}. We
+would also need to believe that the gap between each level is
+equivalent. Unfortunately, there is no natural way to convert a
+qualitative response variable with more than two levels into a
+quantitative response that is appropriate for linear regression.
+
+For cases of \emph{binary} qualitative response, we can utilize the
+indicator(dummy) variable solution seen in Chapter 3. Linear regression
+will provide a fit model for this binary response scenario. However, it
+is possible for linear regression to produce estimates outside of the
+\texttt{{[}0,\ 1{]}} interval, which affects their interpretability as
+probabilities and we are clearly not fitting a model appropriate to the
+data.
+
+When the qualitative response has more than two levels, we need to use
+classification methods that are appropriate.
+
+\hypertarget{logistic-regression}{%
+\subsection{Logistic Regression}\label{logistic-regression}}
+
+Let's consider the \texttt{default} dataset. Rather than modeling this
+response \(Y\) directly, logistic regression models the
+\emph{probability} that \(Y\) belongs to a particular category. It is
+always much more useful to model probability than to just make a
+prediction, as if we know the probability we can make decisions under
+different conditions using different assumptions and loss functions. As
+we saw before when we studied probability and Baye's rule, our
+conditional probability of an outcome such as disease will depend on the
+proportions in the population of interest.
+
+If we estimate using linear regression, we see that some estimated
+probabilities are negative and given probability is never negative this
+alerts us that our model is not very good. Our model would ideally not
+give nonsense values.
+
+We are using the \texttt{tidymodels} package here. I am learning this
+method of model fitting along with you but so far it seems rather nice.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\OtherTok{\textless{}{-}}\NormalTok{ default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{default\_bool =} \FunctionTok{if\_else}\NormalTok{(default }\SpecialCharTok{==} \StringTok{"Yes"}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{))}
+
+\NormalTok{lm\_default }\OtherTok{\textless{}{-}} \FunctionTok{linear\_reg}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"lm"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ default, default\_bool }\SpecialCharTok{\textasciitilde{}}\NormalTok{ balance)}
+
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(}\FunctionTok{predict}\NormalTok{(lm\_default, default)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ balance)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{  .pred)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{ default\_bool, }\AttributeTok{colour =}\NormalTok{ default\_bool)) }\SpecialCharTok{+}
+  \FunctionTok{guides}\NormalTok{(}\AttributeTok{colour=}\StringTok{"none"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+Below is the classification using logistic regression, where the
+probabilities fall between \texttt{0} and \texttt{1}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_default }\OtherTok{\textless{}{-}} \FunctionTok{logistic\_reg}\NormalTok{(}\AttributeTok{mode =} \StringTok{"classification"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"glm"}\NormalTok{)  }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ default, }\FunctionTok{as.factor}\NormalTok{(default\_bool) }\SpecialCharTok{\textasciitilde{}}\NormalTok{ balance) }
+
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(}\FunctionTok{predict}\NormalTok{(logi\_default, default, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ balance)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{  .pred\_1)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{ default\_bool, }\AttributeTok{colour =}\NormalTok{ default\_bool)) }\SpecialCharTok{+}
+  \FunctionTok{guides}\NormalTok{(}\AttributeTok{colour=}\StringTok{"none"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+Logistic regression in this example is modelling the probability of
+default, given the value of \texttt{balance}.
+
+Pr(\texttt{default} = \texttt{Yes}\textbar{}\texttt{balance})
+
+These values, which we abbreviate as \emph{p}(\texttt{balance}), range
+between \texttt{0} and \texttt{1}. Logistic regression will always
+produce an \emph{S-shaped} curve. Regardless of the value of \(X\), we
+will receive a sensible prediction.
+
+From this, we could make a classification prediction for
+\texttt{default} but the probability itself is much more informative, so
+I would much rather report the probability than just the prediction to a
+client. Similar to the reason I did not step functions I do not like
+just a classification without a probability because just classifying is
+basically binning my estimated probabilities and how I want to make a
+decision will vary. This to me is one of the main advantages of modeling
+instead of just using a heuristic method such as K Nearest Neighbors.
+
+\hypertarget{the-logistic-model}{%
+\subsubsection{The Logistic Model}\label{the-logistic-model}}
+
+The problem of using a linear regression model is evident in the chart
+above, where probabilities can fall below \texttt{0} or greater than
+\texttt{1}.
+
+To avoid this, we must model \(p(X)\) using a function that gives
+outputs between \texttt{0} and \texttt{1} for all values of \(X\). In
+logistic regression, we use the \emph{logistic function},
+
+\(p(X) = \frac{e^{\beta_0+\beta_1X}}{1+e^{\beta_0+\beta_1X}}\)
+
+\emph{logistic function}
+
+To fit the model, we use a method called \emph{maximum likelihood} if we
+are using the classical frequentist statistics method or we combine
+prior information with the likelihood and sample from our posterior
+using Bayesian methods. The estimates obtained via MLE will typically
+agree with the Bayesian medians with uninformative or weakly informative
+priors.
+
+If we manipulate the logistic function, we find that
+
+\(\frac{p(X)}{1-p(X)} = e^{\beta_0+\beta_1X}\)
+
+\emph{odds}
+
+This is called the \emph{odds}, and takes any value from \(0\) to
+\(\infty\). This is the same type of odds used in sporting events (``9:1
+odds to win this match'', etc). If \(p(X) = 0.9\), then odds are
+\(\frac{0.9}{1-0.9} = 9\).
+
+If we take the logarithm of the odds, we arrive at
+
+\(log(\frac{p(X)}{1-p(X)}) = \beta_0+\beta_1X\)
+
+\emph{log-odds ~logit}
+
+The left-handed side is called the \emph{log-odds} or \emph{logit}. The
+logistic regression model has a logit that is linear in \(X\).
+
+The contrast to linear regression is that increasing \(X\) by one-unit
+changes the log odds by \(\beta_1\) (or the odds by \(e^{\beta_1}\).
+However, since \(p(X)\) and \(X\) relationship is not a straight line
+(see plot above), \(\beta_1\) does not correspond to the the change in
+\(p(X)\) associated with a one-unit increase in \(X\). The amount that
+\(p(X)\) changes depends on the current value of \(X\). See how the
+slope approaches \texttt{0} more and more slowly as \texttt{balance}
+increases.
+
+Regardless of how much \(p(X)\) moves, if \(\beta_1\) is positive then
+increasing \(X\) will be associated with increasing \(p(X)\). The
+opposite is also true.
+
+\hypertarget{estimating-the-regression-coefficients}{%
+\subsubsection{Estimating the Regression
+Coefficients}\label{estimating-the-regression-coefficients}}
+
+The coefficients in the logistic regression equation must be estimated
+used training data. Linear regression used the least squares approach to
+estimate the coefficients. Here \emph{maximum likelihood} is typically
+used.
+
+Maximum likelihood seeks to to find estimates for \(\beta_0\) and
+\(\beta_1\) such that the predicted probability \(\hat{p}(x_i)\) of
+default for each individual corresponds as closely as possible to to the
+individual's observed default status. We want estimates that produce low
+probabilities for individuals who did not default, and high
+probabilities for those who did.
+
+We can examine the coefficients and other information from our logistic
+regression model.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_default }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{tidy}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 5
+  term         estimate std.error statistic   p.value
+  <chr>           <dbl>     <dbl>     <dbl>     <dbl>
+1 (Intercept) -10.7      0.361        -29.5 3.62e-191
+2 balance       0.00550  0.000220      25.0 1.98e-137
+\end{verbatim}
+
+If we look at the terms of our logistic regression, we see that the
+coefficient for \texttt{balance} is positive. This means that higher
+\texttt{balance} increases \(p(Default)\). A one-unit increase in
+\texttt{balance} will increase the log odds of defaulting by about
+0.0055.
+
+The test-statistic also behaves similarly. Coefficients with large
+statistics indicate evidence against the null hypothesis
+\(H_0: \beta_1 = 0\). For logistic regression, the null hypothesis
+implies that \(p(X) = \frac{e^{\beta_0}}{1+e^{\beta_0}}\), which means
+that the probability of defaulting does not depend on
+\texttt{balance.}This is of course a nonsense hypothesis, so it is not
+at all informative that we rejected it.
+
+The intercept (\(\beta_0\)) is typically not of interest; it's main
+purpose is to adjust the average fitted probabilities to the proportion
+of ones in the data. Note that in Case-Control studies we can't properly
+estimate the \(\beta_0\) but we can estimate the other \(\beta\)'s
+
+\hypertarget{making-predictions}{%
+\subsubsection{Making Predictions}\label{making-predictions}}
+
+Once we have the coefficients, we simply compute the probability of
+\texttt{default} for any given observation.
+
+Let's take an individual with a \texttt{balance} of \texttt{\$1000}.
+Using our model terms, we can compute the probability. Let's extract the
+terms from the model and plug in a \texttt{balance} of \texttt{\$1000}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_coef }\OtherTok{\textless{}{-}}\NormalTok{ logi\_default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{tidy}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# widen it and clean up names}
+  \FunctionTok{select}\NormalTok{(term, estimate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{pivot\_wider}\NormalTok{(}\AttributeTok{names\_from =}\NormalTok{ term, }\AttributeTok{values\_from =}\NormalTok{ estimate) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  janitor}\SpecialCharTok{::}\FunctionTok{clean\_names}\NormalTok{()}
+\NormalTok{logi\_coef }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{prob\_1000 =} \FunctionTok{exp}\NormalTok{(intercept }\SpecialCharTok{+}\NormalTok{ balance }\SpecialCharTok{*} \DecValTok{1000}\NormalTok{) }\SpecialCharTok{/}
+\NormalTok{           (}\DecValTok{1} \SpecialCharTok{+} \FunctionTok{exp}\NormalTok{(intercept }\SpecialCharTok{+}\NormalTok{ balance }\SpecialCharTok{*} \DecValTok{1000}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 1 x 3
+  intercept balance prob_1000
+      <dbl>   <dbl>     <dbl>
+1     -10.7 0.00550   0.00575
+\end{verbatim}
+
+We find the estimated probability to be less than \texttt{1\%}.
+
+We can also incorporate qualitative predictors with the logistic
+regression model. Here we encode \texttt{student} in to the model.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_default\_student }\OtherTok{\textless{}{-}} 
+  \FunctionTok{logistic\_reg}\NormalTok{(}\AttributeTok{mode =} \StringTok{"classification"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"glm"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ default, }\FunctionTok{as.factor}\NormalTok{(default\_bool) }\SpecialCharTok{\textasciitilde{}}\NormalTok{ student)}
+\NormalTok{logi\_default\_student }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{tidy}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 5
+  term        estimate std.error statistic  p.value
+  <chr>          <dbl>     <dbl>     <dbl>    <dbl>
+1 (Intercept)   -3.50     0.0707    -49.6  0       
+2 studentYes     0.405    0.115       3.52 0.000431
+\end{verbatim}
+
+This model indicates that students have a higher rate of defaulting
+compared to non-students. The idea is the same as what we learned with
+linear regression.
+
+Note that if we take \texttt{exp(-3.50)=0.030} we get the estimated odds
+for non-students. If we take \texttt{exp(-3.50+.40)=\ 0.045} we get the
+estimated odds for students. If we exponentiation the term for
+studentYes, \texttt{exp(0.40)=1.49} we note that the odds for students
+is estimated to be 1.49 times the odds for a non-student.
+
+\hypertarget{multiple-logistic-regression}{%
+\subsubsection{Multiple Logistic
+Regression}\label{multiple-logistic-regression}}
+
+We now consider the scenario of multiple predictors.
+
+We can rewrite \(p(X)\) as
+
+\(p(X) = \frac{e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}{1+e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}\)
+
+/p\textgreater{}
+
+And again use the maximum likelihood method to estimate the
+coefficients.
+
+Let's estimate the probability of \texttt{default} using
+\texttt{balance}, \texttt{income} and \texttt{student}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{multiple\_logi\_default}\OtherTok{\textless{}{-}} \FunctionTok{logistic\_reg}\NormalTok{(}\AttributeTok{mode =} \StringTok{"classification"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{\textquotesingle{}glm\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ default, }\FunctionTok{as.factor}\NormalTok{(default\_bool) }\SpecialCharTok{\textasciitilde{}}\NormalTok{ balance }\SpecialCharTok{+}\NormalTok{ student }\SpecialCharTok{+}\NormalTok{ income)}
+\NormalTok{multiple\_logi\_default }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{tidy}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 4 x 5
+  term            estimate  std.error statistic   p.value
+  <chr>              <dbl>      <dbl>     <dbl>     <dbl>
+1 (Intercept) -10.9        0.492        -22.1   4.91e-108
+2 balance       0.00574    0.000232      24.7   4.22e-135
+3 studentYes   -0.647      0.236         -2.74  6.19e-  3
+4 income        0.00000303 0.00000820     0.370 7.12e-  1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{kableExtra}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\AttributeTok{x =}\NormalTok{ broom}\SpecialCharTok{::}\FunctionTok{tidy}\NormalTok{(multiple\_logi\_default), }\AttributeTok{format =} \StringTok{"pipe"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lrrrr@{}}
+\toprule
+term & estimate & std.error & statistic & p.value \\
+\midrule
+\endhead
+(Intercept) & -10.8690452 & 0.4922555 & -22.080088 & 0.0000000 \\
+balance & 0.0057365 & 0.0002319 & 24.737563 & 0.0000000 \\
+studentYes & -0.6467758 & 0.2362525 & -2.737646 & 0.0061881 \\
+income & 0.0000030 & 0.0000082 & 0.369815 & 0.7115203 \\
+\bottomrule
+\end{longtable}
+
+Notice that being a student now \emph{decreases} the chances of default,
+whereas in our previous model (which only contained \texttt{student} as
+a predictor), it increased the chances.
+
+Why is that? This model is showing that, for a fixed value of
+\texttt{income} and \texttt{balance}, students actually default less.
+This is because \texttt{student} and \texttt{balance} are correlated.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{ balance, }\AttributeTok{fill =}\NormalTok{ student)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+If we plot the distribution of \texttt{balance} across \texttt{student},
+we see that students tend to carry larger credit card balances.
+
+This example illustrates the dangers of drawing insights from single
+predictor regressions when other predictors may be relevant. The results
+from using one predictor can be substantially different compared to
+using multiple predictors. This phenomenon is known as
+\emph{confounding}. This is why in observational studies we can't really
+say which variable is most important or how an individual variable
+impacts the estimated probability of success.
+
+\hypertarget{logistic-regression-for-2-response-classes}{%
+\subsubsection{Logistic Regression for \textgreater2 Response
+Classes}\label{logistic-regression-for-2-response-classes}}
+
+Sometimes we wish to classify a response variable that has more than two
+classes. This could be the medical example where a patient outcomes
+falls into \texttt{stroke}, \texttt{overdose}, and \texttt{seizure}. It
+is possible to extend the two-class logistic regression model into
+multiple-class, these methods are useful but I will not cover them here.
+
+A method that is popular for multi-class classification is
+\emph{discriminant analysis}.
+
+\hypertarget{linear-discriminant-analysis}{%
+\subsection{Linear Discriminant
+Analysis}\label{linear-discriminant-analysis}}
+
+Logistic regression models the distribution of response \(Y\) given the
+predictor(s) \(X\). In discriminant analysis, we model the distribution
+of the predictors \(X\) in each of the response classes, and then use
+Bayes' theorem to flip these around into estimates for
+\(Pr(Y = k|X = x)\).
+
+Why do we need this method?
+
+\begin{itemize}
+\item
+  Well-separated classes produce unstable parameter estimates for
+  logistic regression models
+\item
+  If \(n\) is small and distribution of predictors \(X\) is normal
+  across the classes, the linear discriminant model is more stable than
+  logistic regression
+\end{itemize}
+
+\hypertarget{using-bayes-theorem-for-classification}{%
+\subsubsection{Using Bayes' Theorem for
+Classification}\label{using-bayes-theorem-for-classification}}
+
+Consider the scenario where we want to classify an observation into one
+of \(K\) classes, where \(K >= 2\).
+
+\begin{itemize}
+\tightlist
+\item
+  Let \(\pi_k\) represent the overall or \emph{prior} probability that a
+  randomly chosen observation comes from the \(k\)th class
+\item
+  Let \(f_k(x) = Pr(X = x|Y = k)\) denote the \emph{density function} of
+  \(X\) for an observation that comes from the \(k\)th class.
+\end{itemize}
+
+In other words, \(f_k(x)\) being large means that there is a high
+probability that an observation in the \(k\)th class has
+\(X \approx x\).
+
+We can use Bayes' theorem
+
+\[
+\operatorname{Pr}(Y=k | X=x)=\frac{\pi_{k} f_{k}(x)}{\sum_{l=1}^{K} \pi_{l} f_{l}(x)}
+\]
+
+And call the left-hand side \(p_k(X)\). We can plug in estimates of
+\(\pi_k\) and \(f_k(X)\) into Bayes' theorem above to get the
+probability of a certain class, given an observation.
+
+\begin{itemize}
+\tightlist
+\item
+  Solving for \(\pi_k\) is easy if we have a random sample of \(Y\)s
+  from the population. We simply calculate the fraction of observations
+  that fall into a \(k\) class.
+\item
+  Estimating \(f_k(X)\) is more challenging unless we assume simple
+  forms for these densities
+\end{itemize}
+
+We refer to \(p_k(x)\) as the posterior probability that an observation
+\(X = x\) belongs to the \(k\)th class. This is the probability that the
+observation belongs to the \(k\)th class, \emph{given} the predictor
+value for that observation.
+
+The Bayes' classifier classifies an observation to the class for which
+\(p_k(X)\) is largest. If we can find a way to estimate \(f_k(X)\), we
+can develop a classifier that approximates the Bayes classifier.
+
+\hypertarget{linear-discriminant-analysis-for-p-1}{%
+\subsubsection{Linear Discriminant Analysis for p =
+1}\label{linear-discriminant-analysis-for-p-1}}
+
+Let's assume we have one predictor. We need to obtain an estimate for
+\(f_k(x)\) (the density function for \(X\) given a class \(k\)). This
+will obtain a value for \(p_k(x)\). We will then classify this
+observation for which \(p_k(x)\) is greatest.
+
+To estimate \(f_k(x)\), we need to make some assumptions about its form.
+
+Let's assume \(f_k(x)\) is \emph{normal} or \emph{Gaussian}. The normal
+density takes the form
+
+\[
+f_{k}(x)=\frac{1}{\sqrt{2 \pi} \sigma_{k}} \exp \left(-\frac{1}{2 \sigma_{k}^{2}}\left(x-\mu_{k}\right)^{2}\right)
+\]
+
+Plugging this back in to \(p_k(x)\), we obtain
+
+\[
+p_{k}(x)=\frac{\pi_{k} \frac{1}{\sqrt{2 \pi} \sigma} \exp \left(-\frac{1}{2 \sigma^{2}}\left(x-\mu_{k}\right)^{2}\right)}{\sum_{l=1}^{K} \pi_{l} \frac{1}{\sqrt{2 \pi} \sigma} \exp \left(-\frac{1}{2 \sigma^{2}}\left(x-\mu_{l}\right)^{2}\right)}
+\]
+
+Taking the log and rearranging results in
+
+\[
+\delta_{k}(x)=x \cdot \frac{\mu_{k}}{\sigma^{2}}-\frac{\mu_{k}^{2}}{2 \sigma^{2}}+\log \left(\pi_{k}\right)
+\]
+
+In this case, the Bayes decision boundary corresponds to
+
+\[
+x=\frac{\mu_{1}^{2}-\mu_{2}^{2}}{2\left(\mu_{1}-\mu_{2}\right)}=\frac{\mu_{1}+\mu_{2}}{2}
+\]
+
+We can simulate some data to show a simple example.
+
+In this data we have two classes:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\mu_1 = -1.25, \mu_2 = 1.25, \sigma_1^2 = \sigma_2^2 = 1\)
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{var\_1 }\OtherTok{=} \DecValTok{1}
+\NormalTok{var\_2 }\OtherTok{=}\NormalTok{ var\_1}
+\NormalTok{n}\OtherTok{=}\DecValTok{10000}
+\NormalTok{f\_1 }\OtherTok{=} \FunctionTok{tibble}\NormalTok{(}\AttributeTok{fun =} \StringTok{"f\_1"}\NormalTok{, }\AttributeTok{x =} \FunctionTok{rnorm}\NormalTok{(}\AttributeTok{n =}\NormalTok{ n, }\AttributeTok{mean =} \SpecialCharTok{{-}}\FloatTok{1.25}\NormalTok{, }\AttributeTok{sd =}\NormalTok{ var\_1))}
+\NormalTok{f\_2 }\OtherTok{=} \FunctionTok{tibble}\NormalTok{(}\AttributeTok{fun =} \StringTok{"f\_2"}\NormalTok{, }\AttributeTok{x =} \FunctionTok{rnorm}\NormalTok{(}\AttributeTok{n =}\NormalTok{ n, }\AttributeTok{mean =} \FloatTok{1.25}\NormalTok{, }\AttributeTok{sd =}\NormalTok{ var\_2))}
+\NormalTok{f\_x }\OtherTok{=} \FunctionTok{bind\_rows}\NormalTok{(f\_1, f\_2)}
+\CommentTok{\# add summary statistics}
+\NormalTok{f\_x }\OtherTok{\textless{}{-}}\NormalTok{ f\_x }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(fun) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{pi =} \FunctionTok{n}\NormalTok{()}\SpecialCharTok{/}\NormalTok{(}\DecValTok{2}\SpecialCharTok{*}\NormalTok{n),}
+         \AttributeTok{var =} \FunctionTok{var}\NormalTok{(x),}
+         \AttributeTok{mu =} \FunctionTok{mean}\NormalTok{(x)) }
+\NormalTok{decision\_boundary }\OtherTok{\textless{}{-}}\NormalTok{ f\_x }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(fun) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{mu =} \FunctionTok{mean}\NormalTok{(x)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{decision\_boundary =} \FunctionTok{sum}\NormalTok{(mu) }\SpecialCharTok{/} \DecValTok{2}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{pull}\NormalTok{()  }\CommentTok{\#this makes decision\_boundary into a constant }
+\NormalTok{f\_x }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x, }\AttributeTok{colour =}\NormalTok{ fun)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_density}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_vline}\NormalTok{(}\AttributeTok{xintercept =}\NormalTok{ decision\_boundary, }\AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+These two densities overlap, and so given \(X = x\), we still have
+uncertaintly about which class the observation belongs to. If both
+classes are equally likely for a random observation \(\pi_1 = \pi_2\),
+then we see the Bayes classifier assigns the observation to class 1 if
+\(x < 0\) and class 2 otherwise.
+
+Even if we are sure that \(X\) is drawn from a Gaussian distribution
+within each class, we still need to estimate \(\mu_1,...,\mu_k\),
+\(\pi_1,...,\pi_k\), and \(\sigma^2\). The \emph{linear discriminant
+analysis} method approximates these by plugging in estimates as follows
+
+\(\hat{\mu}_k = \frac{1}{n_k}\sum_{i:y_i=k}{x_i}\)
+
+*
+
+\(\hat{\sigma}^2 = \frac{1}{n-K}\sum_{k=1}^{K}\sum_{i:y_i=k}{(x_i-\hat{\mu}_k)^2}\)
+
+*
+
+The estimate for \(\hat{\mu}_k\) is the average of all training
+observations from the \(k\)th class. The estimate for \(\hat{\sigma}^2\)
+is the weighted average of the sample variances for each of the K
+classes.
+
+To estimate \(\hat{\pi}_k\), we simply take the proportion of training
+observations that belong to the \(k\)th class
+
+\(\hat{\pi}_k = n_k/n\)
+
+*
+
+From these estimates, we can achieve a decision boundary
+
+\[
+\hat{\delta}_{k}(x)=x \cdot \frac{\hat{\mu}_{k}}{\hat{\sigma}^{2}}-\frac{\hat{\mu}_{k}^{2}}{2 \hat{\sigma}^{2}}+\log \left(\hat{\pi}_{k}\right)
+\]
+
+This classifier has \emph{linear} in the name due to the fact that the
+\emph{discriminant function} above are linear functions of \(x\).
+
+Let's take a sample from our earlier distribution and see how it
+performs.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(discrim)}
+\NormalTok{f\_sample }\OtherTok{=}\NormalTok{ f\_x }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{sample\_frac}\NormalTok{(}\AttributeTok{size =} \FloatTok{0.01}\NormalTok{)  }\CommentTok{\#sample a proportion of the data}
+\NormalTok{lda\_f }\OtherTok{\textless{}{-}}\NormalTok{ discrim}\SpecialCharTok{::}\FunctionTok{discrim\_linear}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{\textquotesingle{}MASS\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ f\_sample, }\FunctionTok{as.factor}\NormalTok{(fun) }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x)}
+\NormalTok{preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(lda\_f, f\_sample, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{)}
+\NormalTok{f\_sample }\OtherTok{\textless{}{-}}\NormalTok{ f\_sample }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{bind\_cols}\NormalTok{(preds)}
+\NormalTok{est\_decision }\OtherTok{\textless{}{-}}\NormalTok{ f\_sample }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{arrange}\NormalTok{(x) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(.pred\_class }\SpecialCharTok{==} \StringTok{\textquotesingle{}f\_2\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{slice}\NormalTok{(}\DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{pull}\NormalTok{(x)}
+\FunctionTok{ggplot}\NormalTok{(f\_sample, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x, }\AttributeTok{fill =}\NormalTok{ fun)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{bins=}\DecValTok{18}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_vline}\NormalTok{(}\AttributeTok{xintercept =}\NormalTok{ est\_decision, }\AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_vline}\NormalTok{(}\AttributeTok{xintercept =} \DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+Notice the estimated decision boundary (dashed line) being very close to
+the Bayes decision boundary.
+
+\hypertarget{linear-discriminant-analysis-for-p-1-1}{%
+\subsubsection{Linear Discriminant Analysis for p \textgreater{}
+1}\label{linear-discriminant-analysis-for-p-1-1}}
+
+We can extend LDA classifier to multiple predictors.
+
+The multivariate Gaussian distribution assumes that each predictor
+follows a one-dimensional normal distribution, with some correlation
+between each pair of predictors.
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://www.youtube.com/watch?v=JjB58InuTqM}{Andrew Ng on
+  Multivariate Gaussian Distribution}
+\end{itemize}
+
+To indicate that a \(p\)-dimensional random variable \(X\) has a
+multi-variate Gaussian distribution, we write \$ X \sim N(\mu, \Sigma)\$
+
+\begin{itemize}
+\tightlist
+\item
+  \(E(X) = \mu\) is the mean of \(X\) (a vector with \(p\) components)
+\item
+  \(Cov(X) = \Sigma\) is the \(p*p\) covariance matrix of \(X\).
+\end{itemize}
+
+The multivariate Gaussian density is defined as
+
+\[
+f(x)=\frac{1}{(2 \pi)^{p / 2}|\mathbf{\Sigma}|^{1 / 2}} \exp \left(-\frac{1}{2}(x-\mu)^{T} \mathbf{\Sigma}^{-1}(x-\mu)\right)
+\]
+
+In the case of \(p>1\) predictors, the LDA classifier assumes that the
+observations in the \(k\)th class are drawn from a multivariate Gaussian
+distribution \(N(\mu_k, \Sigma)\), where \(\mu_k\) is a class-specific
+mean vector, and \(\Sigma\) is the covariance matrix that is common to
+all \(K\) classes.
+
+Plugging the density function for the \(k\)th class, \(f_k(X = x)\),
+into
+
+\[
+\operatorname{Pr}(Y=k | X=x)=\frac{\pi_{k} f_{k}(x)}{\sum_{l=1}^{K} \pi_{l} f_{l}(x)}
+\]
+
+and performing some algebra reveals that the Bayes classifier will
+assign observation \(X = x\) by identifying the class for which
+
+\[
+\delta_{k}(x)=x^{T} \boldsymbol{\Sigma}^{-1} \mu_{k}-\frac{1}{2} \mu_{k}^{T} \boldsymbol{\Sigma}^{-1} \mu_{k}+\log \pi_{k}
+\]
+
+is largest.
+
+\hypertarget{performing-lda-on-default-data}{%
+\paragraph{Performing LDA on Default
+data}\label{performing-lda-on-default-data}}
+
+If we run an LDA model on our \texttt{default} dataset, predicting the
+probability of \texttt{default} based off of \texttt{student} and
+\texttt{balance}, we achieve a respectable \texttt{3.0\%} error rate.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{lda\_default }\OtherTok{\textless{}{-}}\NormalTok{ discrim}\SpecialCharTok{::}\FunctionTok{discrim\_linear}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{\textquotesingle{}MASS\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ default, default }\SpecialCharTok{\textasciitilde{}}\NormalTok{ student }\SpecialCharTok{+}\NormalTok{ balance)}
+\NormalTok{preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(lda\_default, default, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{)}
+\CommentTok{\# error rate}
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{metrics}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ default, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  .metric  .estimator .estimate
+  <chr>    <chr>          <dbl>
+1 accuracy binary         0.972
+2 kap      binary         0.361
+\end{verbatim}
+
+While this may seem impressive, let's remember that only \texttt{3.6\%}
+of observations in the dataset end up in default. This means that if we
+assigned a \emph{null} classifier, which simply predicted every
+observation to not end in default, our error rate would be
+\texttt{3.6\%}. This is worse, but not by much, compared to our LDA
+error rate. The kap (short for kappa, not kapitula) statistic is
+designed to adjust the accuracy for the proportion we would get correct
+just by selecting the majority category. Notice it is rather low.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# null error rate}
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(default) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{count}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{prop =}\NormalTok{ n }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(n))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  default     n   prop
+  <fct>   <int>  <dbl>
+1 No       9667 0.967 
+2 Yes       333 0.0333
+\end{verbatim}
+
+In our data, we only have 3.3\% that are defaults.
+
+Binary decision makers can make two types of errors:
+
+\begin{itemize}
+\tightlist
+\item
+  Incorrectly assigning an individual who defaults to the ``no default''
+  category
+\item
+  Incorrectly assigning an individual who doesn't default to the
+  ``default'' category.
+\end{itemize}
+
+We can identify the breakdown by using a \emph{confusion matrix}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cm }\OtherTok{\textless{}{-}}\NormalTok{ default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{conf\_mat}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ default, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\NormalTok{cm}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+          Truth
+Prediction   No  Yes
+       No  9644  252
+       Yes   23   81
+\end{verbatim}
+
+We see that our LDA only predicted \texttt{104} people to default. Of
+these, \texttt{81} actually defaulted. So, only \texttt{23} of out of
+the \texttt{9667} people who did not default were incorrectly labeled.
+
+However, of the \texttt{333} people in our test set who defaulted, we
+only predicted this correctly for \texttt{23} of them. That means
+\texttt{24\%} of individuals who default were incorrectly classified.
+Having an error rate this high for the problematic class (those who
+default) is unacceptable.
+
+Class-specific performance is an important concept. \emph{Sensitivity}
+and \emph{specificity} characterize the performance of a classifier or
+screening test. In this case, the sensitivity is the percentage of true
+defaults who are identified (a low \texttt{\textasciitilde{}\%}). The
+specificity is the percentage of non-defaulters who are correctly
+identified (\texttt{??/??\ \textasciitilde{}\ ?\%}).
+
+Remember that LDA is trying to approximate the Bayes classifier, which
+has the lowest \emph{total} error rate out of all classifiers (assuming
+Gaussian assumption is correct). The classifier will yield the smallest
+total number of misclassifications, regardless of which class the errors
+came from. In this credit card scenario, the credit card company might
+wish to avoid incorrectly misclassifying a user who defaults. In this
+case, they value sensitivity. For them, the cost of misclassifying a
+defaulter is higher than the cost of misclassifying a non-defaulter
+(which they still desire to avoid).
+
+It's possible to modify LDA for such circumstances. Given the Bayes
+classifier works by assigning an observation to a class in which the
+posterior probability \(p_k(X)\) is greatest (in the two-class scenario,
+this decision boundary is at \texttt{0.5}), we can modify the
+probability threshold to suit our needs. If we wish to increase our
+sensitivity, we can lower this threshold.
+
+Imagine we lowered the threshold to \texttt{0.2}. Sure, we would
+classify more people as defaulters than before (decreasing our
+specificity) but we would also catch more defaulters we previously
+missed (increasing our sensitivity).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(lda\_default, default, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{)}
+\CommentTok{\# error rate}
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{.pred\_class =} \FunctionTok{as.factor}\NormalTok{(}\FunctionTok{if\_else}\NormalTok{(.pred\_Yes }\SpecialCharTok{\textgreater{}} \FloatTok{0.2}\NormalTok{, }\StringTok{"Yes"}\NormalTok{, }\StringTok{"No"}\NormalTok{))) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{conf\_mat}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ default, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+          Truth
+Prediction   No  Yes
+       No  9432  138
+       Yes  235  195
+\end{verbatim}
+
+Now our sensitivy has increased. Of the \texttt{??} people who
+defaulted, we correctly identified
+\texttt{??,\ or\ \textasciitilde{}??\%} of them (up from
+\texttt{\textasciitilde{}??\%} previously).
+
+This came at a cost, as our specificity decreased. This time, we
+predicted \texttt{?} people to default. Of those, \texttt{53} actually
+defaulted. This means that \texttt{?} of the \texttt{?} people who
+didn't default were incorrectly labelled. This gives us a specificity of
+(\texttt{?/?\ \textasciitilde{}\ ?\%})
+
+Despite the overall increase in error rate, the lower threshold may be
+chosen, depending on the context of the problem. To make a decision, an
+extensive amount of \emph{domain knowledge} is required.
+
+The \emph{ROC curve} is a popular graphic for displaying the two types
+of errors for all possible thresholds. ``ROC'' stands for \emph{receiver
+operating characteristics}.
+
+The overall performance of a classifier, summarized over all possible
+thresholds, is given by the \emph{area under the (ROC) curve} (AUC). An
+ideal ROC curve will hug the top left corner. Think of it this way:
+ideal ROC curves are able to increase sensitivity at a much higher rate
+than reduction in specificity.
+
+We can use \texttt{yardstick::} (part of \texttt{tidymodels::}) to plot
+an ROC curve.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{default }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{roc\_curve}\NormalTok{(default, .pred\_No) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{autoplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-19-1.pdf}
+
+We can think of the \emph{sensitivity} as the true positive, and \emph{1
+- specificity} as the false positive.
+
+\hypertarget{quadratic-discriminant-analysis}{%
+\subsubsection{Quadratic Discriminant
+Analysis}\label{quadratic-discriminant-analysis}}
+
+LDA assumes that the observations within each class are drawn from a
+multivariate Gaussian distribution, with a class-specific mean vector
+and a covariance matrix that is common to all \(K\) classes.
+\emph{Quadratic discriminant analysis} (QDA) assumes that class has its
+own covariance matrix.
+
+It assumes that each observation from the \(k\)th class has the form
+\(X \sim N(\mu_k, \Sigma_k)\), where \(\Sigma_k\) is a covariance matrix
+for the \(k\)th class. Under this assumption, the Bayes classifier
+assigns an observation \(X=x\) to the class for which
+
+\[
+\begin{aligned} \delta_{k}(x) &=-\frac{1}{2}\left(x-\mu_{k}\right)^{T} \boldsymbol{\Sigma}_{k}^{-1}\left(x-\mu_{k}\right)-\frac{1}{2} \log \left|\boldsymbol{\Sigma}_{k}\right|+\log \pi_{k} \\ &=-\frac{1}{2} x^{T} \boldsymbol{\Sigma}_{k}^{-1} x+x^{T} \boldsymbol{\Sigma}_{k}^{-1} \mu_{k}-\frac{1}{2} \mu_{k}^{T} \boldsymbol{\Sigma}_{k}^{-1} \mu_{k}-\frac{1}{2} \log \left|\boldsymbol{\Sigma}_{k}\right|+\log \pi_{k} \end{aligned}
+\]
+
+is largest. In this case, we plug in estimates for \(\Sigma_k\),
+\(\mu_k\), and \(\pi_k\). Notice the quantity \(x\) appears as a
+quadratic function, hence the name.
+
+So why would one prefer LDA to QDA, or vice-versa? We again approach the
+bias-variance trade-off. With \(p\) predictors, estimating a
+class-independent covariance matrix requires estimating \(p(p+1)/2\)
+parameters. For example, a covariance matrix with \texttt{4} predictors
+would require estimating \texttt{4(4+1)/2\ =\ 10} parameters. To
+estimate a covariance matrix for each class, the number of parameters is
+\(Kp(p+1)/2\) paramters. With \texttt{50} predictors, this becomes some
+multiple of \texttt{1,275}, depending on \(K\). The assumption of the
+common covariance matrix in LDA causes the model to become linear in
+\(x\), which means there are \(Kp\) linear coefficients to estimate. As
+a result, LDA is much less flexible clasifier than QDA, and has lower
+variance.
+
+The consequence of this is that if LDA's assumption of a common
+covariance matrix is significantly off, the LDA can suffer from high
+bias. In general, LDA tends to be a better bet than QDA when there are
+relatively few training observations and so reduction of variance is
+crucial. In contrast, with large data sets, QDA can be recommended as
+the variance of the classifier is not a major concern, or the assumption
+of a common covariance matrix for the \(K\) classes is clearly not
+correct.
+
+Breaking the assumption of a common covariance matrix can ``curve'' the
+decision boundary, and so the use of a more flexible model (QDA) could
+yield better results.
+
+\hypertarget{a-comparison-of-classification-methods}{%
+\subsection{A Comparison of Classification
+Methods}\label{a-comparison-of-classification-methods}}
+
+Let's discuss the classification methods we have considered and the
+scenarios for which one might be superior.
+
+\begin{itemize}
+\tightlist
+\item
+  Logistic regression
+\item
+  LDA
+\item
+  QDA
+\item
+  K-nearest neighbors
+\end{itemize}
+
+There is a connection between LDA and logistic regression, particularyly
+in the two-class setting with \(p=1\) predictor. The difference being
+that logistic regression estimates coefficients via maximum likelihood,
+and LDA uses the estimated mean and variance from a normal distribution.
+
+The similarity in fitting procedure means that LDA and logistic
+regression often give similar results. When the assumption that
+observations are drawn from a Gaussian distribution with a common
+covariance matrix in each class are in fact true, the LDA can perform
+better than logistic regression. If the assumptions are in fact false,
+logistic regression can outperform LDA.
+
+KNN, on the other hand, is completely non-parametric. KNN looks at
+observations ``closest'' to \(x\), and assigns it to the class to which
+the plurality of these observations belong. No assumptions are made
+about the shape of the decision boundary. We can expect KNN to
+outperform both LDA and logistic regression when the decision boundary
+is highly non-linear. A downside of KNN, even when it does outperform,
+is its lack of interpretability. KNN does not tell us which predictors
+are important.
+
+QDA serves as a compromise between the non-parametric KNN method and the
+linear LDA and logistic regression approaches. The assumption of
+quadratic decision boundary allows it to accurately model a wider range
+of problems. It's reduced flexibility compared to KNN allows it to
+produce a lower variance with a limited number of training observations
+due to it making some assumptions about the form of the decision
+boundary.
+
+\hypertarget{lab-logistic-regression-lda-and-knn}{%
+\subsection{Lab: Logistic Regression, LDA, and
+KNN}\label{lab-logistic-regression-lda-and-knn}}
+
+\hypertarget{churn-dataset}{%
+\subsubsection{Churn Dataset}\label{churn-dataset}}
+
+We will be using the \texttt{modeldata::wa\_churn} dataset to test our
+classification techniques.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(modeldata)}
+\FunctionTok{data}\NormalTok{(wa\_churn)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+These data were downloaded from the IBM Watson site (see below) in September 2018. The data contain a factor for whether a customer churned or not. Alternatively, the tenure column presumably contains information on how long the customer has had an account. A survival analysis can be done on this column using the churn outcome as the censoring information. A data dictionary can be found on the source website.
+\end{verbatim}
+
+Our interest for this dataset is predicting whether a customer will
+churn or not. If a customer is likely to churn, we can offer them an
+incentive to stay. These incentives cost us money, so we want to
+minimize the incentives given out to customers that won't churn. We will
+identify a balance between \emph{sensitivity} and \emph{specificity}
+that maximizes the ROI of our incentive.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#wa\_churn \%\textgreater{}\% skimr::skim()}
+\end{Highlighting}
+\end{Shaded}
+
+The dataset contains \texttt{7043} observations and \texttt{20}
+variables. The dataset consists mostly of factor variables, all with a
+small amount of unique levels. We are going to try out logistic
+regression, LDA, and K-nearest neighbors on this dataset. For now, we
+will only remove the \texttt{11} observations which have missing values
+for the \texttt{total\_charges} column. We will also reorder the
+\texttt{churn} column levels so that a ``success'' corresponds with a
+customer churning.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wa\_churn }\OtherTok{\textless{}{-}}\NormalTok{ wa\_churn }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(total\_charges)) }\SpecialCharTok{\%\textgreater{}\%}
+\FunctionTok{mutate}\NormalTok{(}\AttributeTok{churn =} \FunctionTok{fct\_relevel}\NormalTok{(churn, }\StringTok{"No"}\NormalTok{, }\StringTok{"Yes"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+Now let's take a look at the response variable.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wa\_churn }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{group\_by}\NormalTok{(churn) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{tally}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{mutate}\NormalTok{(}\AttributeTok{prop =}\NormalTok{ n }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(n))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  churn     n  prop
+  <fct> <int> <dbl>
+1 No     5163 0.734
+2 Yes    1869 0.266
+\end{verbatim}
+
+In this dataset, \texttt{73.5\%} of the observations do not churn. There
+is some skew, but nothing drastic. We will now prepare the data and
+apply binary classification techniques to see which model performs best.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{40}\NormalTok{)}
+\NormalTok{split\_churn }\OtherTok{\textless{}{-}} \FunctionTok{initial\_split}\NormalTok{(wa\_churn, }\AttributeTok{prop =} \DecValTok{3}\SpecialCharTok{/}\DecValTok{4}\NormalTok{)}
+\NormalTok{train\_churn }\OtherTok{\textless{}{-}} \FunctionTok{training}\NormalTok{(split\_churn)}
+\NormalTok{test\_churn }\OtherTok{\textless{}{-}} \FunctionTok{testing}\NormalTok{(split\_churn)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{logistic-regression-1}{%
+\subsubsection{Logistic Regression}\label{logistic-regression-1}}
+
+Let's run a logistic regression to predict \texttt{churn} using the
+available variables.
+
+Unlike ISLR, we will use the \texttt{parsnip::logistic\_reg} function
+over \texttt{glm} due to its API design and machine learning workflow
+provided by its parent package, \texttt{tidymodels}. Models in the
+\texttt{\{parsnip\}} package also allow for choice of different
+computational engines. This reduces cognitive overhead by standardizing
+the high-level arguments for training a model without rembembering the
+specifications of different engine. In our case, we will be using the
+\texttt{glm} engine.
+
+\begin{verbatim}
+logistic_reg() is a way to generate a specification of a model before fitting and allows the model to be created using different packages in R, Stan, keras, or via Spark.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_churn }\OtherTok{\textless{}{-}} \FunctionTok{logistic\_reg}\NormalTok{(}\AttributeTok{mode =} \StringTok{"classification"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ train\_churn, churn }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .)}
+\NormalTok{broom}\SpecialCharTok{::}\FunctionTok{tidy}\NormalTok{(logi\_churn) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 31 x 5
+   term                            estimate std.error statistic   p.value
+   <chr>                              <dbl>     <dbl>     <dbl>     <dbl>
+ 1 (Intercept)                     0.845      0.948      0.891   3.73e- 1
+ 2 female                          0.000921   0.0751     0.0123  9.90e- 1
+ 3 senior_citizen                  0.128      0.0987     1.30    1.93e- 1
+ 4 partner                         0.00365    0.0907     0.0402  9.68e- 1
+ 5 dependents                     -0.185      0.104     -1.78    7.55e- 2
+ 6 tenure                         -0.0639     0.00741   -8.62    6.44e-18
+ 7 phone_service                  -0.0198     0.752     -0.0263  9.79e- 1
+ 8 multiple_linesNo phone service NA         NA         NA      NA       
+ 9 multiple_linesYes               0.378      0.206      1.84    6.58e- 2
+10 internet_serviceFiber optic     1.51       0.926      1.63    1.03e- 1
+# ... with 21 more rows
+\end{verbatim}
+
+We can interpret the negative coefficients as reducing the chance a
+customer churns in the context of the model, and the positive
+coefficients as increasing the chance a customer churns in the context
+of the model.
+
+\hypertarget{measuring-model-performance}{%
+\paragraph{Measuring model
+performance}\label{measuring-model-performance}}
+
+We can use the \texttt{predict()} function with our
+\texttt{\{tidymodels\}} workflow. The \texttt{type} parameter specifies
+whether we want probabilities or classifications returned. The object
+returned is a tibble with columns of the predicted probability of the
+observation being in each class.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(}\AttributeTok{object =}\NormalTok{ logi\_churn, }\AttributeTok{new\_data =}\NormalTok{ test\_churn,}
+                      \AttributeTok{type =} \StringTok{"class"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Note that we get a warning here about rank, this is because we have a
+lot of categorical variables in our analysis, so our design is not
+`full-rank' if we created our dummy variables ourselves and always left
+off one category we would not get this error. Specifying
+\texttt{type\ =\ "class"} will generate classification predictions based
+off of a \texttt{0.5} threshold (this might not be optimal for the
+problem).
+
+Let's add them to our test set.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{test\_metrics }\OtherTok{\textless{}{-}}\NormalTok{ test\_churn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(logi\_preds)}
+\end{Highlighting}
+\end{Shaded}
+
+This adds a column, \texttt{.pred\_class} at each observation.
+
+We can produce a confusion matrix using \texttt{conf\_mat()} function of
+the \texttt{\{yardstick\}} package (used for measuring model
+performance, also part of \texttt{\{tidymodels\}}).
+
+We tell \texttt{conf\_mat()} that the \texttt{direction} column is our
+source of truth, and our classifications are contained in the
+\texttt{.pred\_class} column.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cm\_churn }\OtherTok{\textless{}{-}}\NormalTok{ test\_metrics }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{conf\_mat}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ churn, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\NormalTok{cm\_churn}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+          Truth
+Prediction   No  Yes
+       No  1142  224
+       Yes  132  260
+\end{verbatim}
+
+\texttt{conf\_mat} objects also have a \texttt{summary()} method that
+computes various classification metrics.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(cm\_churn) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(.metric }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}accuracy\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}sens\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}spec\textquotesingle{}}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 3 x 3
+  .metric  .estimator .estimate
+  <chr>    <chr>          <dbl>
+1 accuracy binary         0.797
+2 sens     binary         0.896
+3 spec     binary         0.537
+\end{verbatim}
+
+Our overall accuracy is around \texttt{\textasciitilde{}80.1\%}. This
+may seem high, but if we look at the original dataset, the data is
+skewed. A naive classifier would produce a \texttt{73.5\%} accuracy (the
+proportion of yes/no churn values).Still, it suggests that we are better
+off than randomly guessing.
+
+Can we account for the skew of data when assessing our model? If we
+utilize the \texttt{yardstick::metrics()} function on our test data
+fitted with class predictions, we can get a dataframe containing overall
+model performance.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{test\_metrics }\SpecialCharTok{\%\textgreater{}\%}
+   \FunctionTok{metrics}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ churn, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  .metric  .estimator .estimate
+  <chr>    <chr>          <dbl>
+1 accuracy binary         0.797
+2 kap      binary         0.461
+\end{verbatim}
+
+Notice the metric of \texttt{kap}. The Kappa statistic compares an
+observed accuracy with expected accuracy (random chance). Kappa is a
+similar measure to accuracy(), but is normalized by the accuracy that
+would be expected by chance alone and is very useful when one or more
+classes have large frequency distributions.
+
+We will be using \texttt{kap} to evaluate how our logistic regression
+fits to other techniques.
+
+\hypertarget{linear-discriminant-analysis-1}{%
+\subsubsection{Linear discriminant
+analysis}\label{linear-discriminant-analysis-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{40}\NormalTok{)}
+\NormalTok{lda\_churn }\OtherTok{\textless{}{-}} \FunctionTok{discrim\_linear}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ train\_churn, churn }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .)}
+\end{Highlighting}
+\end{Shaded}
+
+Calling the \texttt{parsnip::} model object gives us information about
+the model fit. We can see the prior probabilities as well as the
+\emph{coefficients of linear discriminants}. These provide the linear
+combination of the variables used to create the decision rule. If the
+combination is large, the model will predict an increase.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lda\_churn}\SpecialCharTok{$}\NormalTok{fit}\SpecialCharTok{$}\NormalTok{scaling }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as\_tibble}\NormalTok{(}\AttributeTok{rownames =} \StringTok{"term"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(LD1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 30 x 2
+   term                                   LD1
+   <chr>                                <dbl>
+ 1 contractOne year                    -0.507
+ 2 contractTwo year                    -0.274
+ 3 tech_supportYes                     -0.273
+ 4 online_securityYes                  -0.228
+ 5 online_backupYes                    -0.139
+ 6 dependents                          -0.129
+ 7 tech_supportNo internet service     -0.113
+ 8 internet_serviceNo                  -0.113
+ 9 streaming_tvNo internet service     -0.113
+10 streaming_moviesNo internet service -0.113
+# ... with 20 more rows
+\end{verbatim}
+
+We see similar important terms as the logistic regression model.
+Customers on long contracts are less likely to churn.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lda\_preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(lda\_churn, test\_churn, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{) }
+\NormalTok{test\_churn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(lda\_preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{metrics}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ churn, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  .metric  .estimator .estimate
+  <chr>    <chr>          <dbl>
+1 accuracy binary         0.787
+2 kap      binary         0.444
+\end{verbatim}
+
+Here we achieve a \texttt{kap} of \texttt{42.9\%}.
+
+\hypertarget{k-nearest-neighbors}{%
+\subsubsection{K-Nearest Neighbors}\label{k-nearest-neighbors}}
+
+Next, we will utilize the \texttt{parsnip::nearest\_neighbor()}
+function.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{40}\NormalTok{)}
+\NormalTok{knn\_churn }\OtherTok{\textless{}{-}} \FunctionTok{nearest\_neighbor}\NormalTok{(}\AttributeTok{mode =} \StringTok{"classification"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{data =}\NormalTok{ train\_churn, churn }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .)}
+\NormalTok{knn\_preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(}\AttributeTok{object =}\NormalTok{ knn\_churn, }\AttributeTok{new\_data =}\NormalTok{ test\_churn)}
+\NormalTok{test\_churn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(knn\_preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{metrics}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ churn, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 2 x 3
+  .metric  .estimator .estimate
+  <chr>    <chr>          <dbl>
+1 accuracy binary         0.743
+2 kap      binary         0.345
+\end{verbatim}
+
+K-nearest neighbors performs much worse, with a \texttt{kap} of
+\texttt{34.1\%}.
+
+KNN's poor performance is most likely due to the predictor variables and
+true decision boundary not being highly non-linear. In this case, KNN's
+flexibility doesn't match the shape of the data.
+
+\hypertarget{choosing-the-model}{%
+\subsubsection{Choosing the model}\label{choosing-the-model}}
+
+Given logistic regression and LDA exhibiting similar performance
+metrics, we could use either model. However, logistic regression makes
+less assumptions about the underlying data.
+
+Let's take a look at the ROC curve using
+\texttt{yardstick::roc\_curve()} function.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{logi\_preds }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(logi\_churn, test\_churn, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{)}
+\NormalTok{test\_churn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(logi\_preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{roc\_curve}\NormalTok{(churn, .pred\_Yes) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{autoplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-35-1.pdf}
+
+Our sensitivity (ability to correctly identify those who will churn) has
+two visible inflection points where the slope changes, one around
+\texttt{\textasciitilde{}55\%} and the other around
+\texttt{\textasciitilde{}80\%}. What should we pick as our classifier
+threshold? This will depend, again, estimate the probability of churn,
+then decide what to do, that might change from week to week or based on
+what you are doing to prevent churn.
+
+\hypertarget{evaluating-the-threshold}{%
+\subsubsection{Evaluating the
+threshold}\label{evaluating-the-threshold}}
+
+Choosing a classification threshold greatly depends on the problem
+context.
+
+Imagine we want to hand out an incentive to customers we believe will
+churn. This incentive costs us money, but has a \texttt{100\%} success
+rate of retaining a customer (turning them from a \texttt{Yes} to
+\texttt{No} churn).
+
+Let's assume the cost of this incentive for us is \texttt{\$75}, but the
+value of retaining the user is \texttt{\$150}. We want to maximize the
+return we get from this incentive.
+
+In this case, every true positive will net us \texttt{\$75} of profit,
+and every false positive will cost us \texttt{\$75} (the customer
+doesn't churn, so giving the incentive was a waste). We want to find the
+optimal decision boundary where we maximize our return from this
+incentive.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ltv }\OtherTok{=} \DecValTok{150}
+\NormalTok{incentive }\OtherTok{=} \DecValTok{75}
+\NormalTok{logi\_class }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(logi\_churn, test\_churn, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{)}
+\NormalTok{costs }\OtherTok{\textless{}{-}}\NormalTok{ test\_churn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(logi\_preds) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(logi\_class) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{roc\_curve}\NormalTok{(churn, .pred\_Yes) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{profit  =}\NormalTok{ sensitivity }\SpecialCharTok{*}\NormalTok{ (ltv }\SpecialCharTok{{-}}\NormalTok{ incentive),}
+         \AttributeTok{cost =}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ specificity) }\SpecialCharTok{*}\NormalTok{ incentive,}
+         \AttributeTok{net =}\NormalTok{ profit }\SpecialCharTok{{-}}\NormalTok{ cost)}
+\NormalTok{costs }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ sensitivity, }\AttributeTok{y =}\NormalTok{ net)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{max}\NormalTok{(net)))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ch4_classification_ISLR_files/figure-latex/unnamed-chunk-36-1.pdf}
+
+We can grab the optimal sensitivity and find the corresponding decision
+threshold.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{optimal\_sens }\OtherTok{\textless{}{-}}\NormalTok{ costs }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(net }\SpecialCharTok{==} \FunctionTok{max}\NormalTok{(net))}
+\NormalTok{optimal\_sens}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+# A tibble: 3 x 6
+  .threshold specificity sensitivity profit  cost   net
+       <dbl>       <dbl>       <dbl>  <dbl> <dbl> <dbl>
+1 -Inf                 0           1     75    75     0
+2    0.00108           0           1     75    75     0
+3  Inf                 1           0      0     0     0
+\end{verbatim}
+
+We find that our ideal sensitivity of \texttt{76.4\%} corresponds with a
+specificity of \texttt{75.7\%}. For whatever reason,
+\texttt{roc\_curve()} gives the \texttt{.threshold} column the predicted
+\texttt{No} churn class (despite specifying an ROC curve with
+\texttt{.pred\_Yes} column). Thus, if we estimate a customer to have a
+churn percentage greater or equal to \texttt{1\ -\ 0.308\ =\ 0.692}, we
+can offer them this incentive.
+
+\hypertarget{conclusion}{%
+\subsection{Conclusion}\label{conclusion}}
+
+We demonstrated how a classification model could be used to solve a
+real-world problem in which we want to maximize the value of sending
+incentives to customers that are likely to churn.
+
+\end{document}

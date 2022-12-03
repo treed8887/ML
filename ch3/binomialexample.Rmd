@@ -1,0 +1,30 @@
+---
+title: "Binomial Example"
+author: "Laura Kapitula"
+date: "10/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Binomial
+
+```{r}
+n=20
+p=.3
+prXeq8 = dbinom(8,n,p)
+prXleq8=pbinom(8,n,p)
+pr5ltXleq10 = pbinom(10,n,p) - pbinom(5,n,p)
+pr5lteqXleq1= pbinom(10,n,p) - pbinom(4,n,p)
+
+```
+
+If $X \sim Binom(n=20,p=0.3)$ then the 
+$Pr(X=8)$ = `r round(prXeq8,2)`. 
+
+If $X \sim Binom(n=20,p=0.3)$ then the 
+$Pr(X \le 8)$ = `r round(prXleq8,2)`. 
+
+

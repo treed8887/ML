@@ -1,0 +1,286 @@
+---
+title: "Regression and Other Stories: KidIQ"
+author: "Prof. Kapitula"
+date: "`r format(Sys.Date())`"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+Original Authors: Andrew Gelman, Jennifer Hill, Aki Vehtari
+
+This code is shared in ~/Sharedprojects/Kapitula/STA631/MLR/KidIQ
+
+
+Linear regression with multiple predictors. See Chapters 10, 11 and
+12 in Regression and Other Stories.
+
+-------------
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+#### Load packages
+
+```{r }
+library("rprojroot")
+root<-has_dirname("MLR")$make_fix_file()
+library("rstanarm")
+library("ggplot2")
+library("bayesplot")
+theme_set(bayesplot::theme_default(base_family = "sans"))
+library("foreign")
+library("tidyverse")
+library("skimr")
+```
+
+
+#### Load children's test scores data
+
+
+```{r }
+kidiq <- read.csv("~/SharedProjects/Kapitula/STA631/ROSExamples/KidIQ/data/kidiq.csv")
+head(kidiq)
+
+kidiq %>% skim_without_charts()
+```
+
+## A single predictor
+
+
+#### A single binary predictor 
+
+The option `refresh = 0` supresses the default Stan sampling
+progress output. This is useful for small data with fast
+computation. For more complex models and bigger data, it can be
+useful to see the progress.
+
+```{r }
+fit_1 <- stan_glm(kid_score ~ mom_hs, data=kidiq, refresh = 0)
+print(fit_1)
+lm_fit_1=lm(kid_score ~ mom_hs, data=kidiq)
+summary(lm_fit_1)
+```
+
+
+####  A single continuous predictor 
+
+
+```{r }
+fit_2 <- stan_glm(kid_score ~ mom_iq, data=kidiq, refresh = 0)
+print(fit_2)
+```
+
+
+#### Displaying a regression line as a function of one input variable
+
+Represent only one input variable.
+
+```{r}
+ggplot(kidiq, aes(mom_iq, kid_score)) +
+  geom_point() +
+  geom_abline(intercept = coef(fit_2)[1], slope = coef(fit_2)[2]) +
+  labs(x = "Mother IQ score", y = "Child test score")
+
+```
+
+
+
+
+## Two predictors
+
+#### Linear regression
+
+```{r }
+fit_3 <- stan_glm(kid_score ~ mom_hs + mom_iq, data=kidiq, refresh = 0)
+print(fit_3)
+```
+
+#### Alternative display
+
+```{r }
+summary(fit_3)
+```
+
+### Graphical displays of data and fitted models
+
+#### Two fitted regression lines -- model with no interaction
+
+
+#### ggplot version
+
+In the code below we bring in the estimated coefficients from the model fit above.  We see we have no interaction.
+
+
+```{r }
+ggplot(kidiq, aes(mom_iq, kid_score)) +
+  geom_point(aes(color = factor(mom_hs)), show.legend = FALSE) +
+  geom_abline(
+    intercept = c(coef(fit_3)[1], coef(fit_3)[1] + coef(fit_3)[2]),
+    slope = coef(fit_3)[3],
+    color = c("gray", "black")) +
+  scale_color_manual(values = c("gray", "black")) +
+  labs(x = "Mother IQ score", y = "Child test score")
+```
+
+#### Two fitted regression lines -- model with interaction
+
+
+```{r }
+fit_4 <- stan_glm(kid_score ~ mom_hs + mom_iq + mom_hs:mom_iq, data=kidiq,
+                  refresh = 0)
+print(fit_4)
+```
+
+#### ggplot version
+
+```{r }
+ggplot(kidiq, aes(mom_iq, kid_score)) +
+  geom_point(aes(color = factor(mom_hs)), show.legend = FALSE) +
+  geom_abline(
+    intercept = c(coef(fit_4)[1], sum(coef(fit_4)[1:2])),
+    slope = c(coef(fit_4)[3], sum(coef(fit_4)[3:4])),
+    color = c("gray", "black")) +
+  scale_color_manual(values = c("gray", "black")) +
+  labs(x = "Mother IQ score", y = "Child test score")
+```
+
+
+## Displaying uncertainty in the fitted regression
+
+Since when using stan_glm we simulate from the distribution for our estimated regression coefficients, we can use these simulatons to display this inferential uncertainty graphically.  Consider the simple model with only mom_iq as a predictor.
+
+#### A single continuous predictor 
+
+```{r }
+print(fit_2)
+sims_2 <- as.matrix(fit_2)
+n_sims_2 <- nrow(sims_2)
+subset <- sample(n_sims_2, 10) #random sample of 10
+subset
+```
+
+Data and regression of child's test score on maternal IQ with the solid line showing the fitted regression model and the light lines indicating uncertainty in the fitted regression line.
+
+The gray lines are close to the line because we are illustrating variability in the estimation of the line,
+not individual level variability. 
+
+
+```{r }
+ggplot(kidiq, aes(mom_iq, kid_score)) +
+  geom_point() +
+  geom_abline(
+    intercept = sims_2[subset, 1],
+    slope = sims_2[subset, 2],
+    color = "gray",
+    size = 0.25) +
+  geom_abline(
+    intercept = coef(fit_2)[1],
+    slope = coef(fit_2)[2],
+    size = 0.75) +
+  labs(x = "Mother IQ score", y = "Child test score")
+```
+
+
+```{r }
+
+#predicted2 is the y-hats, predicted values, using model 2
+#then we calculate the residuals as the actual value - the predicted value. 
+kidiq2 <- kidiq %>%
+  mutate(predicted2=predict(fit_2), resid2=kid_score-predict(fit_2)) 
+ggplot(kidiq2, aes(predicted2, resid2)) +
+  geom_point() +
+    labs(x = "Predicted Value", y = "Residual")
+```
+
+Notice it looks really cloud like which is what we want.  We see no evidence of non-constant variance of systematic lack of fit.
+
+
+
+
+#### Two predictors 
+
+In the plots below we use individual plots to illustrate the differences in one variable at the average value of the other.  
+
+Data and regression of child's tests score on maternal IQ and hight school completion, shown as a functions of each of the two input variables with the other held at its average value.  Light lines indicate uncertainty in the regressions.  Values for mother's high school completion have been jittered to make the points more distinct. 
+
+```{r }
+sims_3 <- as.matrix(fit_3)
+n_sims_3 <- nrow(sims_3)
+
+par(mar=c(3,3,1,3), mgp=c(1.7, .5, 0), tck=-.01)
+par(mfrow=c(1,2))
+plot(kidiq$mom_iq, kidiq$kid_score, xlab="Mother IQ score", ylab="Child test score", bty="l", pch=20, xaxt="n", yaxt="n")
+axis(1, seq(80, 140, 20))
+axis(2, seq(20, 140, 40))
+mom_hs_bar <- mean(kidiq$mom_hs)
+subset <- sample(n_sims_3, 10)
+for (i in subset){
+  curve(cbind(1, mom_hs_bar, x) %*% sims_3[i,1:3], lwd=.5,
+     col="gray", add=TRUE)
+}
+curve(cbind(1, mom_hs_bar, x) %*% coef(fit_3), col="black", add=TRUE)
+jitt <- runif(nrow(kidiq), -.03, .03)
+plot(kidiq$mom_hs + jitt, kidiq$kid_score, xlab="Mother completed high school", ylab="Child test score", bty="l", pch=20, xaxt="n", yaxt="n")
+axis(1, c(0,1))
+axis(2, seq(20, 140, 40))
+mom_iq_bar <- mean(kidiq$mom_iq)
+for (i in subset){
+  curve(cbind(1, x, mom_iq_bar) %*% sims_3[i,1:3], lwd=.5,
+     col="gray", add=TRUE)
+}
+curve(cbind(1, x, mom_iq_bar) %*% coef(fit_3), col="black", add=TRUE)
+```
+Why are the lines so tight to the estimates when the data are so variable?
+
+
+#### Center predictors to have zero mean
+
+
+```{r }
+kidiq$c_mom_hs <- kidiq$mom_hs - mean(kidiq$mom_hs)
+kidiq$c_mom_iq <- kidiq$mom_iq - mean(kidiq$mom_iq)
+fit_4c <- stan_glm(kid_score ~ c_mom_hs + c_mom_iq + c_mom_hs:c_mom_iq,
+                   data=kidiq, refresh = 0)
+print(fit_4c)
+```
+
+#### Center predictors based on a reference point
+
+
+```{r }
+kidiq$c2_mom_hs <- kidiq$mom_hs - 0.5
+kidiq$c2_mom_iq <- kidiq$mom_iq - 100
+fit_4c2 <- stan_glm(kid_score ~ c2_mom_hs + c2_mom_iq + c2_mom_hs:c2_mom_iq,
+                    data=kidiq, refresh = 0)
+print(fit_4c2)
+```
+
+
+#### Predict using working status of mother
+
+
+```{r }
+fit_5 <- stan_glm(kid_score ~ as.factor(mom_work), data=kidiq, refresh = 0)
+print(fit_5)
+```
+
+#### What about R-square if we use stan_glm
+
+```{r}
+print(fit_2)
+sims=as.matrix(fit_2)
+quantile(sims[,2],c(0.025,0.975))
+hist(bayes_R2(fit_2))
+median(bayes_R2(fit_2))
+```
+```{r}
+
+lm_fit_2 <- lm(kid_score ~ mom_iq , data=kidiq)
+summary(lm_fit_2) #traditional output
+confint(lm_fit_2)
+```
+

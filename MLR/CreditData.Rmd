@@ -1,0 +1,244 @@
+---
+title: 'Multiple Linear Regression: Credit Data'
+author: "Prof. Kapitula"
+date: "10/20/2020"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+This code is shared in ~/Sharedprojects/Kapitula/STA631/MLR
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+read: https://moderndive.com/6-multiple-regression.html
+read:  Chapter 6 - 8 in Regression and Other Stories
+
+## Credit Data Analysis
+
+For example, the Credit data set from ISLR records balance
+(average credit card debt for a number of individuals) as well as several
+quantitative predictors: age, cards (number of credit cards), education
+(years of education), income (in thousands of dollars), limit (credit limit),
+and rating (credit rating). In addition to these quantitative
+variables, we also have four qualitative variables: gender, student (student
+status), status (marital status), and ethnicity (Caucasian, African American
+or Asian).
+
+```{r start, results=FALSE, message=FALSE, warning=FALSE}
+library(ISLR) #contains the credit data
+library(tidyverse)
+library(GGally)
+library(moderndive)
+library(skimr)
+library(rstanarm)
+library(bayesplot)
+theme_set(theme_classic())
+```
+
+Below we read in the Credit data from the ISLR package for analysis. I rescale Limit and Balance to be in 1000s
+of dollars to make plots look a little neater.  
+```{r}
+data(Credit, package = "ISLR")
+Credit <- as_tibble(Credit)
+Credit <- Credit %>%
+  mutate(Limit1000=Limit/1000, Balance1000=Balance/1000) 
+#glimpse(Credit)
+```
+Check out 5 random cases.
+```{r}
+Credit %>% sample_n(size = 5)
+```
+
+```{r}
+#Credit %>% skim()
+Credit %>% skim_without_charts()
+```
+
+
+## Scatterplot Matrix
+Below is a Scatterplot matrix with student grouping by color.  The ggpairs function can do a lot, for now I will leave it at the below.
+
+```{r spmatrix}
+
+plot=ggpairs(Credit, columns = c(14,2:6), ggplot2::aes(colour=Student),
+             title = "Credit Data by Student Status",
+             upper = list(continuous = wrap("cor", size= 3)),
+              lower=list(continuous=wrap("points", size=0.1))) 
+plot
+```
+## Plots with Categorical Variables
+
+```{r}
+plotc=ggpairs(Credit, columns = c(14,8:11),
+             title = "Credit Data ",
+             lower=list(continuous=wrap("points", size=0.1))) 
+plotc
+```
+
+## Student Only Model Using Standard LM and Modern Dive Output
+
+Below illustrates getting fits using standard LM output and Modern Dive Output
+I will probably mostly use the traditional way.  You should be able to read and understand either
+types of output based on your statistical knowledge.
+
+```{r}
+getPlot(plotc, 1, 3) + guides(fill=FALSE)
+lm_fit <- lm(Balance ~ Student, data = Credit) #lm_fit stores model output
+# Get regression table:
+get_regression_table(lm_fit, print=TRUE)
+get_regression_summaries(lm_fit, print=T)
+summary(lm_fit) #traditional output
+confint(lm_fit)  #confidence intervals for parameters
+```
+## Student Only Model Using Stan GLM Defaults
+
+```{r message=FALSE }
+lm_stan_default <- stan_glm(Balance ~ Student, data = Credit, refresh=0 )
+# Get regression table:
+print(lm_stan_default)
+sims=as.matrix(lm_stan_default)
+quantile(sims[,2],c(0.025,0.975))
+hist(sims[,2])
+```
+
+We will use lm for now as I want to focus on other learning goals and just do likelihood based analysis.
+
+
+## Qualititative Predictor with More than Two Levels
+```{r}
+getPlot(plotc, 1, 5) + guides(fill=FALSE)
+lm_fit <- lm(Balance ~ Ethnicity, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+Here the baseline category is African American, we can write the fit model (rounding to the nearest dollar)
+as:
+
+Estimated Balance = $531 for African Americans
+                  = \$ 531-19 = \$ 512 for Asians
+                  = \$ 531 - 13 = \$ 518 for Caucasians.
+
+There is not much difference here, based on the small estimated sizes, super small R-squared and large p-value.  This does not mean that Ethnicity has no association with credit card debt but there is not evidence of a difference here when ethnicity is looked at individually.
+
+
+## Income and Student
+```{r}
+lm_fit <- lm(Balance ~ Income+Student, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+
+```{r}
+ggplot(Credit, aes(x = Income, y = Balance, color = Student)) +
+  geom_point() +
+  labs(x = "Income", y = "Balance", color = "Student") +
+  geom_parallel_slopes(se = FALSE)
+```
+
+```{r}
+lm_fit <- lm(Balance ~ Income*Student, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+```{r}
+ggplot(Credit, aes(x = Income, y = Balance, color = Student)) +
+  geom_point() +
+  labs(x = "Income", y = "Balance", color = "Student") +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+## Assumptions of Regression Analysis
+
+Chapter 11 in ROS
+
+
+1. Validity of the Data- Are the data valid for the question you are trying to answer or the problem you are trying to address?  Is the outcome measuring what you are really interested in?  Do we have a reasonable set of input variables?
+
+2. Representativeness:  Is our sample representative of the populaton of interest?
+3. Additivity and Linearity of the response-predictor relationships. (ie the model fits)
+4. Independence of error terms. 
+5. Constant variance of error terms.
+6. Residuals are approximately Normal: This is most important if you are doing prediction of future observations and is less important if you are estimating a mean.
+
+In addition some other things to be concerned about when doing regression are:
+
+1. Outliers.
+2. High-leverage points.
+3. Multicollinearity.
+
+We can use residual plots to check these conditions and look for systematic lack of fit.
+
+A residual is the actual outcome minus the predicted outcome  $e_i=y_i-\hat{y}_i$.
+```{r}
+par(mfrow = c(2, 2))  # Split the plotting panel into a 2 x 2 grid
+plot(lm_fit)
+```
+The residual vs. fitted plot can help us identify lack of fit.  We want this plot to look like a cloud. It does look like there is some interesting things going on.  There are probably a lot of people with zero balances and that will impact things.  We can check that.
+```{r}
+mean((Credit$Balance==0))
+```
+We see about 23% of people in the data have balances equal to 0.  
+
+The Normal QQ plot allows us to check if the residuals are approximately normal.  Especially for valid prediction intervals this should also look like a line.
+
+## Leverage
+
+A point is a high leverage point if it is far away from the means of the predictor variables.  Note that leverage only depends on the predictors.  In the plot above 262 has high leverage and a moderate residual.  We see the dashed red lines and those are Cook's D lines.  Cook's D is a measure of how much an individual point influences the estimated regression coefficients.  If there are points outside the dashed lines we would be concerned because those individual points are really influencing our estimated coefficents.
+
+
+## Non-constant variance
+We see some evidence of this in the low end, due to all of those zeros.  This reduces the variance down there given you can't get lower than 0. There are models were we use two parts to one part to model the probability of being zero and one to model positive values given non-zero.  That might be useful here.  We could also expand our model.
+
+## Multicollinearity
+
+```{r}
+plot=ggpairs(Credit, columns = c(14,3,4,6), ggplot2::aes(colour=Student),
+             title = "Credit Data by Student Status",
+             upper = list(continuous = wrap("cor", size= 2)),
+              lower=list(continuous=wrap("points", size=0.1))) 
+plot
+```
+
+
+We see that rating and limit have a very high correlation, that means they are highly collinear. Multicollinear means there is a linear combination of the variables that will be near 0 for all the data. (Collinear is just for two variables).  Example, of multicollinear variables would be amount of money the change in your pocket is worth, and number of pennies, nickels, dimes and quarters.  For most people once you know 4 of those variables you would know the fifth, so these variables are multicollinear.    Fit a lm to see how this impacts estimated regression coefficients for the Credit data.
+
+```{r}
+lm_fit <- lm(Balance ~ Limit + Rating + Age, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+```{r}
+lm_fit <- lm(Balance ~  Rating + Age, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+```{r}
+lm_fit <- lm(Balance ~  Limit +Rating, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+```{r}
+lm_fit <- lm(Balance ~  Rating, data = Credit)
+# Get regression table:
+summary(lm_fit) #traditional output
+confint(lm_fit)
+```
+
+
+Some ways we can deal with multicollinearity include not using all the variables, feature construction such as averaging the variables, and shrinkage methods using priors or techniques like ridge regression which shrink the coeefficients and reduce their standard errors.
+
+

@@ -1,0 +1,271 @@
+---
+title: 'ROS: Chapter4 Statistical Inference: Part1'
+author: "Prof. Kapitula"
+date: "9/23/2021"
+output:
+  html_document: default
+---
+
+
+```{r, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 2.5)
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(error=TRUE, message=FALSE, warning=FALSE)
+# options(width = 100)
+```
+### Needed packages {-}
+
+```{r, message=FALSE}
+library(tidyverse)
+library(infer)
+library(janitor)
+library(matrixStats)
+```
+Working through examples in *Regression and Other Stories* by Gelman, Hill and Vehtari. Original RMD files were Solomon Kurz's versions of examples from ROS that he originally edited but they have been heavily edited by Professor Kapitula.
+
+
+## Sampling distributions and generative models
+
+### Sampling, measurement error, and model error
+
+ Standard paradigms for thinking about the role of inference:
+ 
+* In the sampling model, we are interested in learning some characteristics of a population (for example, the mean and standard deviation of the heights of all women in the United States), which we must estimate from a sample, or subset, of that population.
+
+* In the measurement error model, we are interested in learning aspects of some underlying pattern or law, simple example:
+
+$$y_i=a+bX_i+\epsilon_i$$
+So the $\epsilon_i$ is  error.
+
+* Model error refers to the inevitable imperfections of the models that we apply to real data.
+
+In practice, we often consider all three issues when constructing and working with a statistical model.
+We will consider the standard set up for regression where the data can be thought of as a sample from some population or distribution. The $\epsilon_i$ will be thought of typically as independent, identically distributed with some some distribution, and zero mean.  For example, 
+$$\epsilon_i \sim N(0,\sigma^2) $$
+
+## The mean only model
+Suppose we have 
+
+$$y_i=\mu+\epsilon_i$$
+This is sometimes called the null model, or the grand mean only model.
+
+### The sampling distribution.
+
+> The *sampling distribution* is the set of possible datasets that could have been observed if the data collection process had been re-done, along with the probabilities of these possible values....
+> 
+> the sampling distribution in general will not typically be known, as it depends on aspects of the population, not merely on the observed data (p. 50, *emphasis* in the original).
+
+## 4.2 Estimates, standard errors, and confidence intervals
+
+### 4.2.1 Parameters, estimands, and estimates.
+
+> In statistics jargon, *parameters* are the unknown numbers that determine a statistical model. For example, consider the model $yi = a + b x_i + \epsilon_i$, in which the errors $\epsilon_i$ are normally distributed with mean 0 and standard deviation $\sigma$. The parameters in this model are $a$, $b$, and $\sigma$. The parameters $a$ and $b$ are called *coefficients*, and $\sigma$ is a called a *scale* or *variance parameter*....
+>
+> An *estimand*, or *quantity of interest*, is some summary of parameters or data that somebody is interested in estimating. For example, in the regression model, $yi = a + b x_i + \text{error}$, the parameters $a$ and $b$ might be of interest--$a$ is the intercept of the model, the predicted value of $y$ when $x = 0$; and $b$ is the slope, the predicted difference in $y$, comparing two data points that differ by 1 in $x$. Other quantities of interest could be predicted outcomes for particular new data points, or combinations of predicted values such as sums, differences, averages, and ratios. 
+>
+> We use the data to construct estimates of parameters and other quantities of interest. (pp. 50--51, *emphasis* in the original)
+
+
+### 4.2.2 Standard errors, inferential uncertainty, and confidence intervals.
+
+The standard error is a measure of the variation in an estimate and gets smaller as sample size gets larger, converging on zero as the sample increases in size.
+>
+> The *confidence interval* represents a range of values of a parameter or quantity of interest that are roughly consistent with the data, given the assumed sampling distribution. If the model is correct, then in repeated applications the 50% and 95% confidence intervals will include the true value 50% and 95% of the time. (p. 51, *emphasis* in the original)
+
+$$ statistic + or - multiplier*SE(statistic)$$
+
+
+You can find the authors' simulation code for Figure 4.2 in the `coverage.Rmd` file within the `Coverage` folder. Here we adjust it a bit for a **tidyverse**-style work flow.
+
+```{r, warning = F, message = F, fig.width = 6.5, fig.height = 4}
+# how many simulations would you like?
+nsims <- 100
+n <-10
+# set the true data-generating parameters
+mu <- 6
+sigma <- 4
+set.seed(410)
+
+# simulate
+sims <- matrix(rnorm(n*nsims, mean = mu, sd = sigma),nsims,n)
+# sims
+ybar <- rowMeans(sims)
+s <- rowSds(sims)
+```
+
+
+```{r, warning = F, message = F, fig.width = 6.5, fig.height = 4}
+d <-
+  tibble(i = 1:nsims,ybar,s) %>% 
+  mutate(ll95 = ybar - 2 * s/sqrt(n),
+         ll50 = ybar - 0.67 * s/sqrt(n),
+         ul50 = ybar + 0.67 * s/sqrt(n),
+         ul95 = ybar + 2 * s/sqrt(n)) 
+
+# plot
+d %>% 
+  ggplot(aes(x = i, y = ybar)) +
+  geom_hline(yintercept = mu, color = "grey75", size = 1/4) +
+  geom_pointrange(aes(ymin = ll95, ymax = ul95),
+                  size = 1/4, fatten = 2/3) +
+  geom_linerange(aes(ymin = ll50, ymax = ul50),
+                 size = 1/2) +
+  labs(title = "Simulation of coverage of confidence intervals",
+       subtitle = paste("The horizontal line shows the true parameter value, and dots and vertical lines show\nestimates and confidence intervals obtained from 100 random simulations from the\nsampling distribution. (n=",n,")"),
+       x = "Simulation index",
+       y = "Estimate, 50%, and 95%\nconfidence interval")
+```
+
+To check, here's the percentage of 95% intervals containing the data-generating population mean, `mu`.
+
+```{r}
+# when we sum a logical, we count
+d %>% 
+  summarise(percent = sum(ll95 <= mu & mu <= ul95 )/nsims)
+```
+
+And here's the percentage of 50% intervals containing the data-generating population mean, `mu`.
+
+```{r}
+d %>% 
+  summarise(percent = sum(ll50 <= mu & ul50 >= mu)/nsims)
+```
+
+Both showed good coverage.
+
+The confidence level is the success rate of the method for calculating the confidence interval.
+
+### 4.2.3 Standard errors and confidence intervals for averages and proportions.
+
+> When estimating the mean of an infinite population, given a simple random sample of size $n$, the standard error is $\sigma / \sqrt n$, where $\sigma$ is the standard deviation of the measurements in the population. This property holds regardless of any assumption about the shape of the sampling distribution, but the standard error might be less informative for sampling distributions that are far from normal.
+>
+> A proportion is a special case of an average in which the data are 0's and 1's. Consider a survey of size $n$ with $y$ Yes responses and $n - y$ No responses. The estimated proportion of the population who would answer Yes to this survey is $\hat p = y / n$, and the standard error of this estimate is $\sqrt{\hat p (1 - \hat p) / n}$. If $p$ is near 0.5, we can approximate this by $0.5 / \sqrt n$. (pp. 51--52)
+ 
+Consider a case where out of a random sample of 1,000, 700 opposed the death penalty and 300 supported it, we can use the formula $\sqrt{\hat p (1 - \hat p) / n}$ to compute the 95% confidence intervals in **R** like so.
+
+Below is a confidence interval comuted using a normal approximation.
+
+```{r}
+n <- 1000
+y <- 700
+
+estimate <- y/n
+
+se <- sqrt(estimate * (1 - estimate) / n)
+
+estimate + qnorm(c(.025, .975), mean = 0, sd = 1) * se
+```
+
+
+
+### 4.2.4 Standard error and confidence interval for a proportion when $y = 0$ or $y = n$.
+
+As a proportion approaches zero or one, the method used above tends to break down. "A standard and reasonable quick correction for constructing a 95% interval when $y$ or $n - y$ is near zero is to use the estimate $\hat p = \frac{y + 2}{n + 4}$ with standard error $\sqrt{\hat p(1 − \hat p)/(n + 4)}$" (p. 52). Here's how this would work when $y = 0$ and $n = 75$.
+
+```{r}
+n <- 75
+y <- 0
+
+# probability, when we use the +4 method we add two successes
+# and two failures
+(estimate <- (y + 2) / (n + 4))
+
+# se
+(sqrt(estimate * (1 - estimate) / (n + 4)))
+
+# 95% CI
+estimate + qnorm(c(.025, .975), mean = 0, sd = 1) * se
+```
+
+However, since "it makes no sense for the interval for a proportion to contain negative values, so we truncate the interval to obtain [0, 0.054][^1]" (p. 52). 
+
+Another, method to use to get the CI is to use prop.test.  prop.test uses the Wilson Interval, which will work fairly well with small y or n-y. https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval_with_continuity_correction
+
+
+
+```{r}
+n <- 75
+y <- 0
+
+prop.test(y,n)
+```
+
+
+
+### 4.2.5 Standard error for a comparison.
+
+The formula to compute the standard error of the difference of two independent quantities follows the form
+
+$$\text{standard error of the difference} = \sqrt{\text{se}_1^2 + \text{se}_2^2}.$$
+
+Consider a survey of 400 men, 57% of whom said they'd vote Republican, and 600 women, 45% of whom said they'd vote Republican.
+
+```{r}
+# men
+n <- 400
+y <- n * .57
+
+estimate_men <- y/n
+
+se_men <- sqrt(estimate_men * (1 - estimate_men) / n)
+
+# women
+n <- 600
+y <- n * .45
+
+estimate_women <- y/n
+
+se_women <- sqrt(estimate_women * (1 - estimate_women) / n)
+
+# estimated gender gap
+estimate_men - estimate_women
+
+# se difference
+sqrt(se_men^2 + se_women^2)
+
+# can use prop.test to get CI for difference
+prop.test(matrix(c(.57*400,.45*600,400-.57*400,600-.45*600),2,2))
+
+```
+
+### 4.2.6 Sampling distribution of the sample mean and standard deviation; normal and $\chi^2$ distributions.
+
+> Suppose you draw n data points $y_1, \dots, y_n$ from a normal distribution with mean $\mu$ and standard deviation $\sigma$, and then compute the sample mean $\bar y = \frac{1}{n} \sum_{i = 1}^n y_i$, and standard deviation $s_y = \sqrt{\frac{1}{n - 1} \sum_{i = 1}^n (y_i - \bar y)^2}$. These two statistics have a sampling distribution that can be derived mathematically from the properties of independent samples from the normal. The sample mean, $\bar y$, is normally distributed with mean $\mu$ and standard deviation $\sigma / \sqrt n$. The sample standard deviation has a distribution defined as follows: $s_y^2 \times (n - 1) / \sigma^2$ has a $\chi^2$ distribution with $n - 1$ degrees of freedom.
+
+
+
+### 4.2.7 Degrees of freedom.
+
+> The concept of *degrees of freedom* arises with the $\chi^2$ distribution and several other places in probability and statistics. Without going into the technical details, we can briefly say that degrees of freedom relate to the need to correct for overfitting when estimating the error of future predictions from a fitted model... Roughly speaking, we can think of observed data as supplying $n$ "degrees of freedom" that can be used for parameter estimation, and a regression with $k$ coefficients is said to use up $k$ of these degrees of freedom. (p. 53, *emphasis* in the original)
+
+### 4.2.8 Confidence intervals from the $t$ distribution.
+
+> The $t$ distribution is a family of symmetric distributions with heavier tails (that is, a greater frequency of extreme values) compared to the normal distribution. The $t$ is characterized by a center, a scale, and a degrees of freedom parameter that can range from 1 to $\infty$. Distributions in the $t$ family with low degrees of freedom have very heavy tails; in the other direction, in the limit as degrees of freedom approach infinity, the $t$ distribution approaches the normal. 
+> 
+> When a standard error is estimated from n data points, we can account for uncertainty using the $t$ distribution with $n - 1$ degrees of freedom, calcuated as $n$ data points minus 1 because of the mean is being estimated from the data. (p. 53)
+
+Take the case where $y = \{35, 34, 38, 35, 37 \}$. Here are our $n$, mean, and standard deviation.
+
+```{r}
+y <- c(35, 34, 38, 35, 37)
+
+(n <- length(y))
+(estimate <- mean(y))
+(s <- sd(y))
+```
+
+Now compute the standard error, along with the 50% and 95% intervals.
+
+```{r}
+(se <- s / sqrt(n))
+
+# 50% CIs
+estimate + qt(c(0.25, 0.75), df = n - 1) * se
+
+# 95% CIs
+estimate + qt(c(0.025, 0.975), df = n - 1) * se
+
+# use t.test
+
+t.test(y)
+```
