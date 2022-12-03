@@ -1,0 +1,43 @@
+---
+title: "HW4"
+author: "Tyler Reed"
+date: "10/27/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 4.6a
+```{r }
+pgirls = c(.4777, .4875, .4859 ,.4754, .4874, .4864 ,.4813 ,.4787, .4895,
+              .4797 ,.4876, .4859 ,.4857 ,.4907, .5010 ,.4903, .4860 ,.4911 ,.4871, .4725, .4822,                  .4870, .4823 ,.4973)
+
+(est_prop=mean(pgirls))
+(sd_prop = sd(pgirls))
+(theory_se_phat = sqrt(est_prop*(1-est_prop)/3900))
+```
+
+## 4.6b p-value calculation
+```{r }
+chi_sq = 14.72
+p_value = pchisq(chi_sq, 23)
+
+```
+
+With a p-value of 0.0956, we fail to reject the null hypothesis that the sex ratios are indeed the same as expected under the binomial distribution. It would appear the discrepancy of von Mises' observed ratios with the expected ratios arose by chance.
+
+## 4.9
+```{r }
+y = 60
+n = 100
+
+(estimate = y/n)
+(se = sqrt(estimate*(1-estimate)/n))
+(int_95 = estimate + qnorm(c(0.025, 0.975))*se)
+
+```

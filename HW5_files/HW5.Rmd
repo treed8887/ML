@@ -1,0 +1,260 @@
+---
+title: "HW5"
+author: "Tyler Reed"
+date: "11/9/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include=FALSE}
+library(rstanarm)
+library(readr)
+library(tidyverse)
+library(kableExtra)
+```
+
+
+# 6.5 
+
+## (a)
+
+```{r 6.5 a}
+earnings <- read.csv("~/mySTA631/HW5_files/Earnings/data/earnings.csv")
+(avg_heights <- earnings %>%
+                        select(height, male) %>%
+                        group_by(male) %>%
+                        summarize(mean = mean(height)))
+
+(avg_earnings_htmale <- -26.0 + (0.6 * avg_heights$mean[2]) + (10.6 * 1))
+(avg_earnings_htfemale <- -26.0 + (0.6 * avg_heights$mean[1]) + (10.6 * 0))
+
+```
+
+## (b)
+```{r 6.5 b, message=FALSE, warning=FALSE}
+(avg_earn_samplemale <- earnings %>%
+                                select(earnk, male) %>%
+                                filter(male == 1) %>%
+                                summarise(mean = mean(earnk)))
+(avg_earn_samplefemale <- earnings %>%
+                                select(earnk, male) %>%
+                                filter(male == 0) %>%
+                                summarise(mean = mean(earnk)))
+(avg_earn_adults_wt <- (0.52 * avg_earn_samplefemale) + (0.48 * avg_earn_samplemale))
+
+```
+
+## (c)
+
+```{r 6.5 c, message=FALSE, warning=FALSE}
+(avg_earn_samplepop <- mean(earnings$earnk))
+(avg_earn_samplemale <- earnings %>%
+                                select(earnk, male) %>%
+                                filter(male == 1) %>%
+                                summarise(mean = mean(earnk)))
+(avg_earn_samplefemale <- earnings %>%
+                                select(earnk, male) %>%
+                                filter(male == 0) %>%
+                                summarise(mean = mean(earnk)))
+
+earn_table_ht <- tibble("Parameters" = c("Avg Weighted Earnings by Sex", 
+             "Avg Earnings by Avg Female Height", 
+             "Avg Earnings by Avg Male Height"),
+       "Values" = c(avg_earn_adults_wt, 
+                    avg_earnings_htfemale,
+                    avg_earnings_htmale))
+
+earn_table_sample <- tibble("Parameters" = c("Avg Earnings from Sample", 
+             "Avg Female Earnings from Sample", 
+             "Avg Male Earnings from Sample"),
+       "Values" = c(avg_earn_samplepop,
+                    avg_earn_samplefemale[1,1],
+                    avg_earn_samplemale[1,1])) 
+```
+
+```{r (c) continued}
+kable(list(earn_table_ht, earn_table_sample), digits = 2)
+```
+#### Interpretation
+
+Comparing the average earnings by average heights of both males and females and the sample averages of earnings of males and females shows that on average, if a male or female is of average height, both will earn less than the sample average which does not consider height. 
+
+Also, the average weighted earnings by sex compared to average earnings direct from the sample is higher on average when accounting for the given difference in population proportions of males and females. The sample weights of male and female are 37.1% and 62.8%, respectively. The lower weights of the sample account for the lower direct sample average earnings by sex than the weighted earnings by sex calculated from the given population parameters.
+
+
+# 6.6
+
+## (a)
+```{r 6.6 a}
+heights <-read.table("~/mySTA631/HW5_files/PearsonLee/data/Heights.txt", header=TRUE) 
+heights_ltmeanmother <- heights %>%
+  filter(mother_height < mean(mother_height))
+head(heights_ltmeanmother)
+
+fit_1 <-stan_glm(daughter_height ~ mother_height, data=heights_ltmeanmother) 
+print(fit_1)
+
+n <-nrow(heights_ltmeanmother) 
+mother_height_jitt <-heights_ltmeanmother$mother_height + runif(n, -0.5, 0.5) 
+daughter_height_jitt <-heights_ltmeanmother$daughter_height + runif(n, -0.5, 0.5)
+
+a_hat <-coef(fit_1)[1] 
+b_hat <-coef(fit_1)[2] 
+plot(mother_height_jitt, daughter_height_jitt, 
+     xlab="Mother's height (inches)",
+     ylab="Adult daughter's height (inches)",
+     abline(a_hat, b_hat))
+```
+
+#### Observations less than mean `mother_height`:
+
+              Median MAD_SD
+(Intercept)   30.4    2.1  
+mother_height  0.5    0.0  
+
+Auxiliary parameter(s):
+      
+      Median MAD_SD
+sigma 2.3    0.0   
+  
+#### All observations:
+
+              Median MAD_SD
+(Intercept)   29.8    0.8  
+mother_height  0.5    0.0  
+
+Auxiliary parameter(s):
+      
+      Median MAD_SD
+sigma 2.3    0.0   
+
+
+
+
+#### Interpretation
+
+Results confirmed the parameters are about the same.
+
+## (b)
+
+```{r 6.6 b}
+heights <-read.table("~/mySTA631/HW5_files/PearsonLee/data/Heights.txt", header=TRUE) 
+heights_ltmeandaught <- heights %>%
+  filter(daughter_height < mean(daughter_height))
+head(heights_ltmeandaught)
+
+fit_2 <-stan_glm(daughter_height ~ mother_height, data=heights_ltmeandaught) 
+print(fit_2)
+
+n <-nrow(heights_ltmeandaught) 
+mother_height_jitt <-heights_ltmeandaught$mother_height + runif(n, -0.5, 0.5) 
+daughter_height_jitt <-heights_ltmeandaught$daughter_height + runif(n, -0.5, 0.5)
+
+a_hat <-coef(fit_1)[1] 
+b_hat <-coef(fit_1)[2] 
+plot(mother_height_jitt, daughter_height_jitt, 
+     xlab="Mother's height (inches)",
+     ylab="Adult daughter's height (inches)",
+     abline(a_hat, b_hat))
+```
+
+#### Observations less than mean of `daughter_height`:
+
+              Median MAD_SD
+              
+(Intercept)   49.7    0.8  
+mother_height  0.2    0.0  
+
+Auxiliary parameter(s)
+
+      Median MAD_SD
+sigma 1.5    0.0   
+
+#### All observations:
+
+              Median MAD_SD
+(Intercept)   29.8    0.8  
+mother_height  0.5    0.0  
+
+Auxiliary parameter(s):
+      
+      Median MAD_SD
+sigma 2.3    0.0   
+
+#### Interpretation
+
+We got rid of the taller daughters, so we don't have as far to go to regress to
+the mean, or the mean is closer than .54, it's .2
+
+# 7.2
+
+## (a)
+```{r 7.2 a}
+a <- 5
+b <- 7
+mu <- 0
+sigma <- 3
+n <- 5
+x <- runif(100, min=0, max=50)
+y <- a + b*x + rnorm(100, 0, 3)
+
+df <- data.frame(x, y)
+fit <-  stan_glm(y ~ x, data=df)
+
+a_hat <-coef(fit)[1] 
+b_hat <-coef(fit)[2] 
+```
+
+```{r 7.2 b-c}
+plot(x, y, 
+     xlab="Xs",
+     ylab="Ys",
+     abline(a_hat, b_hat))
+text(x=30, y=50, "y = 4.4 + 7.0x + error")
+```
+
+
+# 7.3
+
+## (a)
+```{r 7.3 a}
+a <- 5
+b <- 7
+c <- 30
+mu <- 0
+sigma <- 3
+n <- 5
+x <- runif(100, min=0, max=50)
+y <- a + b*x + c*x^2 + rnorm(100, 0, 3)
+
+df <- data.frame(x, y)
+fit <-  stan_glm(y ~ x, data=df)
+
+a_hat <-coef(fit)[1] 
+b_hat <-coef(fit)[2]
+```
+
+```{r 7.3 b}
+plot(x, y, 
+     xlab="Xs",
+     ylab="Ys",
+     abline(a_hat, b_hat))
+text(x=15, y=60000, "y = -12148.4 + 1470.9x + error")
+```
+
+#### Best-fit
+
+Although the distribution is non-linear, the best-fit means that using the least-squares method will minimize the sum of the squared distances of each residual to the line. Of course, it doesn't follow the line perfectly because the distribution is non-linear. 
+
+# 8.5
+
+Assuming the best-fit line is has a positive relationship with a steep slope running through the majority of the data points, I'd say the point with the highest x value would have the greatest influence on the slope since it'd be farthest from the mean.
+
+
+
+

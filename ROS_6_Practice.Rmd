@@ -1,0 +1,97 @@
+---
+title: "ROS_6_Practice"
+author: "Tyler Reed"
+date: "11/18/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Practice
+
+```{r fake data}
+
+x <-1:20
+n <-length(x) 
+a <-0.2 
+b <- 0.3
+sigma <- 0.5
+y <-a + b*x + sigma*rnorm(n)
+
+plot(y)
+y
+
+```
+
+```{r regression fit, message=FALSE}
+
+fake <- data.frame(x,y)
+fit_1 <- stan_glm(y ~ x, data=fake)
+print(fit_1, digits = 2)
+
+```
+
+```{r plot fit}
+plot(fake$x, fake$y, main="Data and fitted regression line") 
+a_hat <-coef(fit_1)[1] 
+b_hat <-coef(fit_1)[2] 
+abline(a_hat, b_hat)
+
+x_bar <-mean(fake$x) 
+text(x_bar, a_hat + b_hat*x_bar, 
+     paste("y =", round(a_hat, 2), "+",
+     round(b_hat, 2), "* x"), adj=0)
+
+
+```
+
+```{r height earnings fit}
+
+earnings$earnk <-earnings$earn/1000 
+fit_2 <-stan_glm(earnk ~ height + male, data=earnings) 
+print(fit_2)
+R2 <-1 - sigma(fit_2)^2 / sd(earnings$earnk)^2
+
+
+```
+
+```{r daughter height fit}
+
+heights <-read.table("~/mySTA631/Kapitula_Shared_Docs/STA631/ROS/ROS-Examples-master/PearsonLee/data/Heights.txt", header=TRUE) 
+print(heights[1:5,])
+
+fit_1 <-stan_glm(daughter_height ~ mother_height, data=heights) 
+print(fit_1)
+
+n <-nrow(heights) 
+mother_height_jitt <-heights$mother_height + runif(n, -0.5, 0.5) 
+daughter_height_jitt <-heights$daughter_height + runif(n, -0.5, 0.5)
+
+a_hat <-coef(fit_1)[1] 
+b_hat <-coef(fit_1)[2] 
+plot(mother_height_jitt, daughter_height_jitt, 
+     xlab="Mother's height (inches)",
+     ylab="Adult daughter's height (inches)",
+     abline(a_hat, b_hat))
+
+```
+
+```{r fake student data, message=FALSE}
+n <-1000
+true_ability <-rnorm(n, 50, 10) 
+noise_1 <-rnorm(n, 0, 10) 
+noise_2 <-rnorm(n, 0, 10) 
+midterm <-true_ability + noise_1 
+final <-true_ability + noise_2 
+exams <-data.frame(midterm, final)
+
+fit_exam <- stan_glm(final ~ midterm, data=exams)
+plot(midterm, final, xlab="Midterm exam score", ylab="Final exam score")
+
+abline(coef(fit_exam)) 
+
+
+```

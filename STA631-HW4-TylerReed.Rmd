@@ -1,0 +1,27 @@
+---
+title: 'HW4'
+author: "Tyler Reed"
+date: "10/27/2021"
+output:
+  pdf_document: default
+---
+
+
+```{r, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 2.5)
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(error=TRUE, message=FALSE, warning=FALSE)
+# options(width = 100)
+```
+### Needed packages {-}
+
+```{r, message=FALSE}
+library(tidyverse)
+library(infer)
+library(janitor)
+library(matrixStats)
+```
+Working through examples in *Regression and Other Stories* by Gelman, Hill and Vehtari. Original RMD files were Solomon Kurz's versions of examples from ROS that he originally edited but they have been heavily edited by Professor Kapitula.
+
+
+
