@@ -1,0 +1,142 @@
+---
+title: "HW2-STA631"
+author: "Tyler Reed"
+date: "`r format(Sys.Date())`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r load-packages, include=FALSE}
+knitr::opts_chunk$set(error = TRUE, fig.width = 12, fig.height = 8, fig.asp = 0.618)
+```
+
+```{r load_data, message=FALSE}
+library(tidyverse)
+library(patchwork)
+library(kableExtra)
+```
+
+# Problems
+
+### 3.1
+
+```{r problem 3.1}
+age_ranges=c("18-29","30-44", "45-64", "65+") 
+n=c(200,250,300, 250) #total number of respondents by age_ranges
+age_proportion=c(.5, .6, .4, .3) #prop of age range who support taxes
+support_higher_taxes=sum(age_proportion*n) / sum(n) #
+
+#display table of stratum, associated weights, and the weighted average of 
+#respondents supporting higher taxes
+table <- tibble(age_ranges, n, age_proportion) 
+kable(table, caption = "Table of Weighted Responses by Age Range") %>%
+  kable_styling(latex_options = "hold_position")
+sprintf("Proportion of Respondents Supporting Higher Taxes = %.2f%%", support_higher_taxes)
+```
+
+
+### 3.2
+
+```{r problem 3.2, message=FALSE}
+age_ranges=c("18-29","30-44", "45-64", "65+") 
+n=c(200,250,300, 250) #total number of respondents by age_ranges
+age_prop_new=c(.4, .5, .4, .3) #prop of age range who support taxes
+support_higher_taxes_new=sum(age_prop_new*n) / sum(n) #weighted average
+
+#display table of stratum, associated weights, and the weighted average of 
+#respondents supporting higher taxes
+table <- tibble(age_ranges, n, age_prop_new) 
+kable(table, caption = "Table of Weighted Responses by Age Range") %>%
+  kable_styling(latex_options = "hold_position")
+sprintf("New Proportion of Respondents Supporting Higher Taxes = %.2f%%", 
+        support_higher_taxes_new)
+```
+
+### 3.3
+
+```{r problem 3.3, message=FALSE}
+
+curve(dnorm(x, mean = .5, sd = .1), from=-1, to=1, main="Density Function of the Standard Normal Distribution")
+curve(dnorm(x, mean = 10, sd = 1),from=5, to=15, main="Density Function of the Standard Normal Distribution")
+curve(dnorm(x, mean = 200, sd = 10), from=100, to=300, main="Density Function of the Standard Normal Distribution")
+```
+
+### 3.4
+
+```{r problem 3.4, message=FALSE}
+
+poissonpmf <- tibble(
+                     x = -20:20,
+                     prob = dpois(x,3.5)
+                    )
+
+ggplot(data = poissonpmf, mapping = aes(x = x, y = prob)) +
+      geom_col(fill="blue") + 
+      ggtitle("Probability Mass Function for Poisson(3.5)") +
+      xlab("x") + 
+      ylab("Pr(X=x)")
+```
+
+
+### 3.5
+
+```{r problem 3.5, message=FALSE}
+
+dbinom <- tibble(x = -1:20,
+                success = dbinom(x, 20, 0.3)
+                )
+ggplot(data = dbinom, mapping = aes(x = x, y = success)) +
+      geom_col(fill="dark blue") +
+      ggtitle("Probability Mass Function for Binomial(N=20, p=0.3)") +
+      xlab("k") +
+      ylab("Pr(X=k)")
+```
+
+### 3.8
+
+```{r problem 3.8, message=FALSE}
+
+sigma_x <- 2.9
+sigma_y <- 2.7
+mu_x <- 69.1
+mu_y <- 63.7
+ro <- 0.3
+
+#produce variates of normal distribution for each partner in marriage with n 10,000
+z1 <- rnorm(10000)
+z2 <- rnorm(10000)
+
+#sample of 1000 from normal distribution of each marriage partner 
+sims_z1 <- sample(z1, size = 1000)
+sims_z2 <- sample(z2, size = 1000)
+
+#define X and Y
+X <- sigma_x * sims_z1[1] + mu_x
+Y <- sigma_y * ((ro * sims_z1[1]) + (sims_z2[1] * (sqrt(1 - ro**2)))) + mu_y
+
+#create variable 'average' and compare correlation of simulation to ro
+average <- (X + Y) / 2
+correlation <- cor(sims_z1, sims_z2)
+
+#produce table of results
+tibble("Z_1" = sims_z1[1],
+       "Z_2" = sims_z2[1],
+       X,
+       Y,
+       "Average" = average,
+       "Correlation" = correlation)
+```
+
+
+#### Tyler Reed:
+
+I could not get my simulation to confirm my calculations consistently.
+the correlation function at the end of this code chunk would not consistently
+produce a ro of 0.3.
+
+
+
+
+
+

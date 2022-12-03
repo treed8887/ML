@@ -1,0 +1,32 @@
+---
+title: "Getting to know RStudio"
+author: "Tyler Reed"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## This is a header
+Text goes here in the white part.
+
+## This is another header
+Below is a code chunk! Code goes in here:
+```{r}
+x <- 6
+favorite_movie <- "Star Wars"
+v <- c(2, 4, 6)
+
+v*3
+
+```
+## This Next Chunk is about my family
+```{r hobbies, warnings=FALSE}
+
+myFamily <- c("Tyler", "Mary Ann", "Sam", "Autumn")
+
+myFamily
+
+```
+
+####: de block above should ouptut a list of my family names.
+
